@@ -68,7 +68,7 @@ export default function App() {
     <div className="mx-auto flex min-h-full max-w-md flex-col lg:max-w-none lg:flex-row">
       {/* Desktop: menu di lato */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-card px-4 py-6 lg:flex">
-        <span className="px-3 text-sm font-semibold tracking-wide text-sea">SKILLDECK</span>
+        <span className="px-3"><span className="flex items-center gap-2 text-sm font-semibold tracking-tight text-ink"><img src="/logo-mark.png" alt="" width="32" height="32" className="h-8 w-8" />SkillDeck Pro</span></span>
         <nav aria-label="Sezioni" className="mt-6 flex-1 space-y-1">
           {tabs.map((t) => (
             <button key={t.id} type="button" onClick={() => setTab(t.id)} aria-current={tab === t.id ? 'page' : undefined}
@@ -86,7 +86,7 @@ export default function App() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between px-4 pt-4 pb-2 lg:hidden">
-          <span className="text-sm font-semibold tracking-wide text-sea">SKILLDECK</span>
+          <span className="flex items-center gap-2 text-sm font-semibold tracking-tight text-ink"><img src="/logo-mark.png" alt="" width="32" height="32" className="h-8 w-8" />SkillDeck Pro</span>
           <span className="flex items-center gap-2 text-xs text-ink-soft">
             {badge && <span className="rounded-full bg-warn-soft px-2 py-0.5 font-semibold text-warn">{badge}</span>}
             {exit}

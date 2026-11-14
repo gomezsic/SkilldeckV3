@@ -7,8 +7,8 @@ import type { AppliedAs } from '../lib/types'
 function Frame({ title, intro, children }: { title: string; intro: string; children: React.ReactNode }) {
   return (
     <main className="mx-auto flex min-h-full max-w-md flex-col justify-center px-5 py-10">
-      <p className="text-sm font-semibold tracking-wide text-sea">SKILLDECK</p>
-      <h1 className="mt-2 text-2xl font-semibold">{title}</h1>
+      <img src="/logo.png" alt="SkillDeck Pro. All your skills on deck." width="640" height="376" className="h-auto w-56" />
+      <h1 className="mt-6 text-2xl font-semibold">{title}</h1>
       <p className="mt-1 text-sm text-ink-soft">{intro}</p>
       <div className="mt-6 space-y-3">{children}</div>
     </main>
