@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Chip } from '../components/ui'
 import { appliedAsLabel, capabilityLabel, fmtDate, stepLabel } from '../lib/labels'
 import { supabase } from '../lib/supabase'
+import People from './People'
 import PersonSheet from './PersonSheet'
 
 interface Item { id: string; personId?: string; name: string; detail: string; since: string | null }
@@ -76,6 +77,7 @@ export default function ControlRoom({ demo }: { demo: boolean }) {
         <Tile title="In percorso" hint="Con il passo aperto" empty="Nessuno in percorso." items={board.inPath} onOpen={setOpenPerson} />
         <Tile title="Titoli da verificare" hint="Dichiarati, in attesa di controllo" empty="Nessun titolo da verificare." items={board.titles} onOpen={setOpenPerson} />
       </div>
+      {!demo && <People onOpen={setOpenPerson} />}
       <p className="mt-4 text-xs text-ink-soft">{demo ? 'Negli esempi le schede non si aprono.' : 'Tocca una persona per aprire la sua scheda con i comandi.'}</p>
     </div>
   )
