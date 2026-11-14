@@ -7,6 +7,7 @@ import type { Deck, Step } from '../lib/types'
 import MyDeck from './MyDeck'
 import { canLeave, friendly } from '../lib/friendly'
 import { ConfirmLink } from './DeckForms'
+import CandidacyPanel from './CandidacyPanel'
 
 const goalsByFamily: Record<string, string[]> = {
   skipper: ['skipper_fleet', 'skipper_charter', 'co_skipper'],
@@ -117,6 +118,8 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
           </div>
         )}
       </section>
+
+      <CandidacyPanel personId={person.id} onChanged={() => void reload()} />
 
       <p className="px-1 text-xs font-semibold tracking-wide text-ink-soft uppercase">Il suo My Deck · puoi compilarlo tu al posto suo</p>
       <MyDeck deck={deck} readOnly={false} admin onChanged={() => void reload()} />

@@ -17,6 +17,7 @@ export interface Person {
   status: PersonStatus
   applied_as: AppliedAs | null
   archived_at?: string | null
+  gender?: string | null; address?: string | null; city?: string | null; mother_tongue?: string | null
 }
 export interface Capability { capability: string; status: 'active' | 'pending' | 'revoked' }
 export interface Step { id?: string; kind: StepKind; position: number; status: StepStatus; done_at: string | null }

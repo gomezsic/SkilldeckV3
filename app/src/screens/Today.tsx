@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Button, Chip } from '../components/ui'
+import { type MyInterview, CONTACT, MODALITY, fmtSlot, loadMyInterview } from '../lib/application'
 import { capabilityLabel, daysTo, fmtDate, requirementLabel, stepLabel } from '../lib/labels'
 import type { Deck, StepKind } from '../lib/types'
 
@@ -15,8 +17,13 @@ interface Card { eyebrow: string; title: string; text?: string; button?: string;
 interface Notice { text: string; tone: 'warn' | 'bad' | 'neutral' }
 
 /** Today risponde a una domanda sola: cosa devo fare adesso. Una scheda, un pulsante, al massimo tre avvisi. */
-export default function Today({ deck, onOpenDeck }: { deck: Deck; onOpenDeck: () => void }) {
+export default function Today({ deck, demo, onOpenDeck }: { deck: Deck; demo?: boolean; onOpenDeck: () => void }) {
   const { person } = deck
+  const [interview, setInterview] = useState<MyInterview | null>(null)
+  useEffect(() => {
+    if (demo || person.status !== 'registered') return
+    loadMyInterview().then(setInterview).catch(() => setInterview(null)) // senza il colloquio la pagina resta comunque utile
+  }, [demo, person.status, person.id])
   const isSkipper = person.family === 'skipper'
   const plan = deck.plans.find((p) => p.status === 'active')
   const open = plan?.steps.find((s) => s.status === 'todo' || s.status === 'in_progress')
@@ -41,7 +48,11 @@ export default function Today({ deck, onOpenDeck }: { deck: Deck; onOpenDeck: ()
   if (person.family === 'admin') {
     card = { eyebrow: 'Amministratore', title: 'La sala di controllo arriva qui.', text: 'Nuove registrazioni, persone in percorso, coda "Pronti per Ready" e titoli da verificare.', tone: 'ink' }
   } else if (person.status === 'registered') {
-    card = { eyebrow: 'Candidatura', title: 'La tua candidatura è arrivata.', text: 'Ti contatteremo per il colloquio. Intanto puoi completare il profilo.', button: 'Completa il profilo', tone: 'ink' }
+    card = interview?.status === 'scheduled' && interview.scheduled_start
+      ? { eyebrow: 'Colloquio fissato', title: `${fmtSlot(interview.scheduled_start).replace(/^./, (c) => c.toUpperCase())}.`, text: `${MODALITY[interview.modality as keyof typeof MODALITY] ?? 'Colloquio'} · circa ${interview.duration_minutes} minuti · orario italiano.${interview.location ? ` ${interview.location}` : ''}`, button: 'Completa il profilo', tone: 'ink' }
+      : interview?.status === 'completed'
+        ? { eyebrow: 'Candidatura', title: 'Colloquio fatto.', text: 'Ti facciamo sapere presto l\'esito. Intanto puoi completare il profilo.', button: 'Completa il profilo', tone: 'ink' }
+        : { eyebrow: 'Candidatura', title: 'La tua candidatura è arrivata.', text: interview ? 'Ti confermiamo noi quale delle date che hai proposto va bene per il colloquio. Intanto puoi completare il profilo.' : 'Ti contatteremo per il colloquio. Intanto puoi completare il profilo.', button: 'Completa il profilo', tone: 'ink' }
     notices.push({ text: `${filled} di 6 sezioni del profilo compilate`, tone: 'neutral' })
   } else if (person.status === 'in_path' && plan && (!open || open.kind === 'ready_confirmation')) {
     card = { eyebrow: 'Percorso completato', title: 'Hai completato il percorso.', text: 'Aspetti la conferma finale.', button: 'Rivedi il tuo profilo', tone: 'ink' }
@@ -79,6 +90,22 @@ export default function Today({ deck, onOpenDeck }: { deck: Deck; onOpenDeck: ()
           <Button onClick={onOpenDeck} className={`mt-5 ${card.tone === 'warn' ? '' : '!bg-white !text-ink'}`}>{card.button}</Button>
         )}
       </section>
+
+      {person.status === 'registered' && interview?.status === 'scheduled' && interview.candidate_message && (
+        <section className="rounded-2xl border border-line bg-card p-4">
+          <h2 className="text-sm font-semibold text-ink-soft">Messaggio per te</h2>
+          <p className="mt-1 text-sm whitespace-pre-wrap">{interview.candidate_message}</p>
+        </section>
+      )}
+      {person.status === 'registered' && interview?.status === 'pending' && (
+        <section className="rounded-2xl border border-line bg-card p-4">
+          <h2 className="text-sm font-semibold text-ink-soft">Le date che hai proposto per il colloquio</h2>
+          <ul className="mt-1 space-y-1 text-sm">
+            {interview.preferred_slots.map((s) => <li key={s} className="first-letter:uppercase">{fmtSlot(s)}</li>)}
+          </ul>
+          <p className="mt-2 text-xs text-ink-soft">Preferenza di contatto: {CONTACT[interview.contact_preference as keyof typeof CONTACT] ?? interview.contact_preference}. Orari italiani.</p>
+        </section>
+      )}
 
       {person.status === 'in_path' && plan && (
         <section className="rounded-2xl border border-line bg-card p-4">

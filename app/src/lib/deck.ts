@@ -4,7 +4,7 @@ import type { Deck, Person, Plan, Title } from './types'
 /** Legge tutto ciò che serve a My Deck. Le regole di accesso stanno nel database: qui si legge solo ciò che è mio. */
 export async function loadDeck(personId?: string): Promise<Deck | null> {
   // Senza personId leggo la MIA scheda (l'amministratore vede tutte le righe: il filtro è obbligatorio).
-  let q = supabase.from('person').select('id, first_name, last_name, email, phone, birth_date, ui_language, family, status, applied_as, archived_at')
+  let q = supabase.from('person').select('id, first_name, last_name, email, phone, birth_date, ui_language, family, status, applied_as, archived_at, gender, address, city, mother_tongue')
   if (personId) q = q.eq('id', personId)
   else {
     const { data: auth } = await supabase.auth.getUser()
@@ -53,7 +53,7 @@ export async function loadDeck(personId?: string): Promise<Deck | null> {
   }
 }
 
-export async function savePersonalData(id: string, patch: Pick<Person, 'first_name' | 'last_name' | 'phone' | 'birth_date' | 'ui_language'>) {
+export async function savePersonalData(id: string, patch: Pick<Person, 'first_name' | 'last_name' | 'phone' | 'birth_date' | 'ui_language' | 'gender' | 'address' | 'city'>) {
   const { error } = await supabase.from('person').update(patch).eq('id', id)
   if (error) throw error
 }

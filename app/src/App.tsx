@@ -1,12 +1,15 @@
 import type { Session } from '@supabase/supabase-js'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadDeck } from './lib/deck'
 import { demoDecks } from './lib/demo'
 import { envLabel, supabase } from './lib/supabase'
 import type { Deck } from './lib/types'
 import { canLeave, friendly } from './lib/friendly'
 import { Toaster } from './components/ui'
-import { Register, SignIn } from './screens/Access'
+import { clearDraft, readDraft, saveDraft, submitApplication } from './lib/application'
+import { SignIn } from './screens/Access'
+import Application from './screens/Application'
+import Landing from './screens/Landing'
 import AdminShell from './screens/AdminShell'
 import MyDeck from './screens/MyDeck'
 import Today from './screens/Today'
@@ -31,6 +34,12 @@ export default function App() {
   const [deck, setDeck] = useState<Deck | null | undefined>(demo ?? undefined)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('today')
+  const [hash, setHash] = useState(location.hash)
+  useEffect(() => { const on = () => { setHash(location.hash); scrollTo(0, 0) }; addEventListener('hashchange', on); return () => removeEventListener('hashchange', on) }, [])
+  const route = hash.match(/^#\/(diventa|candidatura)[-/](skipper|crew)/)
+  const [applyError, setApplyError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+  const tried = useRef(false)
 
   useEffect(() => {
     if (demo) return
@@ -46,12 +55,38 @@ export default function App() {
   }, [demo])
   useEffect(() => { if (session) refresh(); else if (session === null && !demo) setDeck(undefined) }, [session, refresh, demo])
 
+  // Chi ha compilato la candidatura prima di confermare l'email: al primo ingresso parte da sola.
+  useEffect(() => {
+    if (demo || !session || deck !== null || tried.current) return
+    const pending = session.user.user_metadata?.application as (Record<string, unknown> & { phone?: string }) | undefined
+    if (!pending) return
+    tried.current = true; setSending(true)
+    submitApplication(pending)
+      .catch((e) => {
+        // L'invio non è riuscito: rimetto i dati nel modulo, così non va riscritto nulla.
+        const [prefix, ...rest] = String(pending.phone ?? '').split(' ')
+        saveDraft({ ...(pending as any), prefix: prefix || '+39', phone: rest.join(' ') })
+        setApplyError(friendly(e, 'inviare la candidatura'))
+      })
+      .then(() => supabase.auth.updateUser({ data: { application: null } }))
+      .finally(() => { setSending(false); refresh() })
+  }, [demo, session, deck, refresh])
+  useEffect(() => { if (deck && route) { clearDraft(); history.replaceState(null, '', location.pathname + location.search); setHash('') } }, [deck, !!route]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!demo) {
     if (session === undefined) return <Splash />
-    if (session === null) return <SignIn />
+    if (session === null) {
+      if (route?.[1] === 'diventa') return <Landing kind={route[2] as 'skipper' | 'crew'} />
+      if (route?.[1] === 'candidatura') return <><Toaster /><Application key={route[2]} session={null} kind={route[2] as 'skipper' | 'crew'} onDone={refresh} /></>
+      return <SignIn />
+    }
     if (error) return <Splash text={error} />
-    if (deck === undefined) return <Splash />
-    if (deck === null) return <Register onDone={refresh} />
+    if (deck === undefined || sending) return <Splash text={sending ? 'Invio la tua candidatura…' : undefined} />
+    if (deck === null) {
+      if (route?.[1] === 'diventa') return <Landing kind={route[2] as 'skipper' | 'crew'} />
+      const kind = (route?.[2] as 'skipper' | 'crew' | undefined) ?? (readDraft()?.track === 'crew' ? 'crew' : 'skipper')
+      return <><Toaster /><Application key={kind} session={session} kind={kind} firstError={applyError} onDone={refresh} /></>
+    }
   }
   if (!deck) return <Splash />
 
@@ -106,7 +141,7 @@ export default function App() {
             </nav>
           )}
           {tab === 'deck' ? <MyDeck deck={deck} readOnly={!!demo && !(import.meta.env.DEV && location.search.includes('edit'))} onChanged={refresh} />
-            : tab === 'today' ? <Today deck={deck} onOpenDeck={() => { setTab('deck'); scrollTo(0, 0) }} />
+            : tab === 'today' ? <Today deck={deck} demo={!!demo} onOpenDeck={() => { setTab('deck'); scrollTo(0, 0) }} />
             : (
               <div className="mt-16 text-center">
                 <h1 className="text-xl font-semibold">{tabs.find((t) => t.id === tab)?.label}</h1>

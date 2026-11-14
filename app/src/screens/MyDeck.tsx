@@ -335,10 +335,10 @@ function SimpleRow({ title, sub, expires, filePath, children }: { title: string;
 
 function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnly: boolean; onChanged: () => void }) {
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ first_name: person.first_name, last_name: person.last_name, phone: person.phone ?? '', birth_date: person.birth_date ?? '' })
+  const [form, setForm] = useState({ first_name: person.first_name, last_name: person.last_name, phone: person.phone ?? '', birth_date: person.birth_date ?? '', gender: person.gender ?? '', address: person.address ?? '', city: person.city ?? '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  useUnsaved(editing && (form.first_name !== person.first_name || form.last_name !== person.last_name || form.phone !== (person.phone ?? '') || form.birth_date !== (person.birth_date ?? '')))
+  useUnsaved(editing && (form.first_name !== person.first_name || form.last_name !== person.last_name || form.phone !== (person.phone ?? '') || form.birth_date !== (person.birth_date ?? '') || form.address !== (person.address ?? '') || form.city !== (person.city ?? '') || form.gender !== (person.gender ?? '')))
 
   if (!editing) {
     return (
@@ -347,7 +347,10 @@ function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnl
         <Row label="Email" value={person.email} />
         <Row label="Telefono" value={person.phone} />
         <Row label="Data di nascita" value={person.birth_date ? fmtDate(person.birth_date) : null} />
-        <Row label="Lingua" value={person.ui_language === 'it' ? 'Italiano' : 'English'} />
+        <Row label="Sesso" value={person.gender} />
+        <Row label="Residenza" value={[person.address, person.city].filter(Boolean).join(', ') || null} />
+        <Row label="Lingua madre" value={person.mother_tongue} />
+        <Row label="Lingua dell'app" value={person.ui_language === 'it' ? 'Italiano' : 'English'} />
         <Button variant="ghost" className="mt-3" onClick={() => setEditing(true)} disabled={readOnly}>
           {readOnly ? 'Modifica · non attiva in sola lettura' : 'Modifica'}
         </Button>
@@ -363,6 +366,7 @@ function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnl
       await savePersonalData(person.id, {
         first_name: form.first_name.trim(), last_name: form.last_name.trim(),
         phone: form.phone.trim() || null, birth_date: form.birth_date || null, ui_language: person.ui_language,
+        gender: form.gender || null, address: form.address.trim() || null, city: form.city.trim() || null,
       })
       setEditing(false); onChanged(); say('Dati personali salvati')
     } catch (e) { setError(friendly(e)) } finally { setBusy(false) }
@@ -373,6 +377,14 @@ function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnl
       <Field label="Cognome" required value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
       <Field label="Telefono" type="tel" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
       <Field label="Data di nascita" type="date" min={dateLimits.birth.min} max={dateLimits.birth.max} value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} />
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-ink-soft">Sesso</span>
+        <select className="h-12 w-full rounded-xl border border-line bg-card px-3 text-base" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+          <option value="">Da indicare</option><option value="M">M</option><option value="F">F</option>
+        </select>
+      </label>
+      <Field label="Indirizzo di residenza" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+      <Field label="Città di residenza" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
       {error && <p role="alert" className="text-sm text-bad">{error}</p>}
       <Button type="submit" disabled={busy}>{busy ? 'Salvo…' : 'Salva'}</Button>
       <Button type="button" variant="ghost" onClick={() => setEditing(false)}>Annulla</Button>
