@@ -6,6 +6,7 @@ import { envLabel, supabase } from './lib/supabase'
 import type { Deck } from './lib/types'
 import { Register, SignIn } from './screens/Access'
 import MyDeck from './screens/MyDeck'
+import Today from './screens/Today'
 
 type Tab = 'today' | 'job' | 'deck' | 'skills'
 const tabs: { id: Tab; label: string; icon: string }[] = [
@@ -14,8 +15,7 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'deck', label: 'My Deck', icon: 'M12 12a4 4 0 100-8 4 4 0 000 8zm-7 8a7 7 0 0114 0' },
   { id: 'skills', label: 'My Skills', icon: 'M12 4l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8z' },
 ]
-const soon: Record<Exclude<Tab, 'deck'>, string> = {
-  today: 'Qui troverai una cosa sola: il prossimo passo da fare.',
+const soon: Record<'job' | 'skills', string> = {
   job: 'Qui arriveranno bacheca, candidature e ingaggi, nel secondo tempo.',
   skills: 'Qui arriveranno Career, formazione e crescita.',
 }
@@ -27,7 +27,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(demo ? null : undefined)
   const [deck, setDeck] = useState<Deck | null | undefined>(demo ?? undefined)
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('deck')
+  const [tab, setTab] = useState<Tab>('today')
 
   useEffect(() => {
     if (demo) return
@@ -72,7 +72,8 @@ export default function App() {
             ))}
           </nav>
         )}
-        {tab === 'deck' ? <MyDeck deck={deck} readOnly={!!demo} onChanged={refresh} /> : (
+        {tab === 'deck' ? <MyDeck deck={deck} readOnly={!!demo} onChanged={refresh} />
+          : tab === 'today' ? <Today deck={deck} onOpenDeck={() => { setTab('deck'); scrollTo(0, 0) }} /> : (
           <div className="mt-16 text-center">
             <h1 className="text-xl font-semibold">{tabs.find((t) => t.id === tab)?.label}</h1>
             <p className="mx-auto mt-2 max-w-xs text-sm text-ink-soft">{soon[tab]}</p>
