@@ -28,7 +28,7 @@ function Clamp({ text }: { text: string }) {
   return <p className="text-sm leading-snug whitespace-pre-wrap">{all || !long ? text : `${text.slice(0, 120).trimEnd()}…`}{long && <button type="button" className="ml-1.5 text-xs font-semibold text-sea" onClick={() => setAll(!all)}>{all ? 'meno' : 'leggi tutto'}</button>}</p>
 }
 function Choice({ on, children, onClick }: { on: boolean; children: React.ReactNode; onClick: () => void }) {
-  return <button type="button" aria-pressed={on} onClick={onClick} className={`min-h-11 rounded-full border px-4 py-2 text-sm font-medium ${on ? 'border-ink bg-ink text-white' : 'border-line bg-card'}`}>{on && <span aria-hidden>✓ </span>}{children}</button>
+  return <button type="button" aria-pressed={on} onClick={onClick} className={`min-h-9 rounded-full border px-3 py-1 text-[13px] font-medium ${on ? 'border-ink bg-ink text-white' : 'border-line bg-card'}`}>{children}</button>
 }
 /** Un blocco del curriculum: titolo, contenuto in lettura, e "Modifica" che apre le scelte. */
 function Block({ title, hint, empty, filled, readOnly, dirty, onSave, onCancel, view, children }: {
@@ -61,9 +61,9 @@ function Block({ title, hint, empty, filled, readOnly, dirty, onSave, onCancel, 
         {hint && <p className="text-sm text-ink-soft">{hint}</p>}
         {children}
         {error && <p role="alert" className="rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">{error}</p>}
-        <div className="grid grid-cols-2 gap-2">
-          <Button type="button" variant="ghost" onClick={() => { onCancel(); setEditing(false); setError(null) }}>Annulla</Button>
-          <Button type="button" disabled={busy} onClick={() => void save()}>{busy ? 'Salvo…' : 'Salva'}</Button>
+        <div className="flex justify-end gap-2">
+          <button type="button" className="h-10 rounded-lg border border-line bg-card px-4 text-sm font-semibold" onClick={() => { onCancel(); setEditing(false); setError(null) }}>Annulla</button>
+          <button type="button" disabled={busy} className="h-10 rounded-lg bg-ink px-5 text-sm font-semibold text-white disabled:opacity-50" onClick={() => void save()}>{busy ? 'Salvo…' : 'Salva'}</button>
         </div>
       </div>
     </section>
@@ -89,15 +89,14 @@ function SkillBlock({ deck, kind, list, title, hint, empty, lists, readOnly, onC
         <fieldset key={g.group ?? '-'} className="min-w-0">
           {g.group && <legend className="mb-1.5 flex items-center gap-3 text-xs font-semibold text-ink-soft">{g.group}
             <button type="button" className="font-semibold text-sea" onClick={() => { const all = g.items.map((o) => o.label); setSel(all.every((v) => sel.includes(v)) ? sel.filter((v) => !all.includes(v)) : [...new Set([...sel, ...all])]) }}>{g.items.every((o) => sel.includes(o.label)) ? 'Togli tutte' : 'Tutte'}</button></legend>}
-          <div className="flex flex-wrap gap-2">{g.items.map((o) => <Choice key={o.id} on={sel.includes(o.label)} onClick={() => setSel(toggle(sel, o.label))}>{o.label}</Choice>)}</div>
+          <div className="flex flex-wrap gap-1.5">{g.items.map((o) => <Choice key={o.id} on={sel.includes(o.label)} onClick={() => setSel(toggle(sel, o.label))}>{o.label}</Choice>)}</div>
         </fieldset>
       ))}
       {extra.length > 0 && <div className="flex flex-wrap gap-2">{extra.map((v) => <Choice key={v} on onClick={() => setSel(toggle(sel, v))}>{v}</Choice>)}</div>}
       <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const v = other.trim(); if (v && !sel.includes(v)) setSel([...sel, v]); setOther('') }}>
-        <input aria-label="Altro" placeholder="Altro: scrivi e premi Aggiungi" value={other} onChange={(e) => setOther(e.target.value)} maxLength={80} className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-card px-3 text-base" />
-        <button type="submit" className="h-11 rounded-xl border border-line bg-card px-4 text-sm font-semibold">Aggiungi</button>
+        <input aria-label="Altro" placeholder="Altro: scrivi e premi Aggiungi" value={other} onChange={(e) => setOther(e.target.value)} maxLength={80} className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-card px-3 text-base" />
+        <button type="submit" className="h-10 rounded-lg border border-line bg-card px-4 text-sm font-semibold">Aggiungi</button>
       </form>
-      <p className="text-xs text-ink-soft">{sel.length} {sel.length === 1 ? 'voce scelta' : 'voci scelte'}</p>
     </Block>
   )
 }
