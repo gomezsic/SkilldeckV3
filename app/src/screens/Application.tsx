@@ -2,11 +2,11 @@ import type { Session } from '@supabase/supabase-js'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Field } from '../components/ui'
 import {
-  type ApplicationData, type Options, type Track, BOATS, CONTACT, CONTEXTS as CONTEXTS_BASE, COOKING, DEFAULT_SETTINGS, EXPERIENCE as EXPERIENCE_BASE, LANGUAGES as LANGUAGES_BASE, MAX_LANGUAGES, PREFIXES,
-  SKILL_GROUPS, SKILL_LEVELS, emptyApplication, fmtSlot, fmtSlotTime, freeSlots, loadOptions, passwordProblem, problems, readDraft, saveDraft,
+  type ApplicationData, type Options, type Track, BOATS as BOATS_BASE, CONTACT, CONTEXTS as CONTEXTS_BASE, COOKING, DEFAULT_SETTINGS, EXPERIENCE as EXPERIENCE_BASE, LANGUAGES as LANGUAGES_BASE, MAX_LANGUAGES, PREFIXES,
+  SKILL_GROUPS as SKILL_GROUPS_BASE, SKILL_LEVELS, emptyApplication, fmtSlot, fmtSlotTime, freeSlots, loadOptions, passwordProblem, problems, readDraft, saveDraft,
   submitApplication, toPayload,
 } from '../lib/application'
-import { type Option, loadLists, pick } from '../lib/lists'
+import { type Option, grouped, loadLists, pick } from '../lib/lists'
 import { friendly, useUnsaved } from '../lib/friendly'
 import { supabase } from '../lib/supabase'
 
@@ -49,6 +49,9 @@ export default function Application({ session, kind, firstError, onDone }: { ses
   useEffect(() => { loadLists().then(setLists).catch(() => setLists([])) }, [])
   const fromList = (list: string, base: string[]) => { const l = pick(lists, list).map((o) => o.label); return l.length ? l : base }
   const LANGUAGES = fromList('language', LANGUAGES_BASE), EXPERIENCE = fromList('experience_years', EXPERIENCE_BASE), CONTEXTS = fromList('experience_context', CONTEXTS_BASE)
+  const BOATS = fromList('crew_boat', BOATS_BASE)
+  const crewSkills = pick(lists, 'crew_skill')
+  const SKILL_GROUPS = crewSkills.length ? grouped(crewSkills).map((g) => ({ title: g.group ?? 'Altre competenze', items: g.items.map((o) => o.label) })) : SKILL_GROUPS_BASE
   const [email, setEmail] = useState(''); const [email2, setEmail2] = useState('')
   const [pw, setPw] = useState(''); const [pw2, setPw2] = useState('')
   const [options, setOptions] = useState<Options | null>(null)

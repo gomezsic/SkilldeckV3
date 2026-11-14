@@ -21,6 +21,8 @@ export const LIST_NAMES: Record<string, { name: string; where: string; grouped?:
   insurance_kind: { name: 'Tipi di assicurazione', where: 'Documenti e assicurazioni' },
   experience_years: { name: 'Fasce di esperienza', where: 'Candidatura' },
   experience_context: { name: 'Contesti di esperienza', where: 'Candidatura Crew' },
+  crew_boat: { name: 'Tipi di barca', where: 'Candidatura Crew' },
+  crew_skill: { name: 'Competenze dello staff', where: 'Candidatura Crew', grouped: true },
 }
 
 let cache: Promise<Option[]> | null = null
