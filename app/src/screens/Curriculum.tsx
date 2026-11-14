@@ -11,6 +11,22 @@ const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x
 function Tag({ children }: { children: React.ReactNode }) {
   return <span className="inline-flex items-center rounded-full bg-sand px-3 py-1.5 text-sm">{children}</span>
 }
+/** Elenco in riga, separato da punti: occupa molto meno dei bottoni. Oltre le prime voci compare "+N". */
+function Inline({ items, max = 7 }: { items: string[]; max?: number }) {
+  const [all, setAll] = useState(false)
+  const shown = all ? items : items.slice(0, max)
+  return (
+    <p className="text-sm leading-snug">
+      {shown.join(' · ')}
+      {items.length > max && <button type="button" className="ml-1.5 text-xs font-semibold text-sea" onClick={() => setAll(!all)}>{all ? 'meno' : `+${items.length - max}`}</button>}
+    </p>
+  )
+}
+function Clamp({ text }: { text: string }) {
+  const [all, setAll] = useState(false)
+  const long = text.length > 130
+  return <p className="text-sm leading-snug whitespace-pre-wrap">{all || !long ? text : `${text.slice(0, 120).trimEnd()}…`}{long && <button type="button" className="ml-1.5 text-xs font-semibold text-sea" onClick={() => setAll(!all)}>{all ? 'meno' : 'leggi tutto'}</button>}</p>
+}
 function Choice({ on, children, onClick }: { on: boolean; children: React.ReactNode; onClick: () => void }) {
   return <button type="button" aria-pressed={on} onClick={onClick} className={`min-h-11 rounded-full border px-4 py-2 text-sm font-medium ${on ? 'border-ink bg-ink text-white' : 'border-line bg-card'}`}>{on && <span aria-hidden>✓ </span>}{children}</button>
 }
@@ -26,23 +42,30 @@ function Block({ title, hint, empty, filled, readOnly, dirty, onSave, onCancel, 
     setBusy(true); setError(null)
     try { await onSave(); setEditing(false); say(`${title}: salvato`) } catch (e) { setError(friendly(e)) } finally { setBusy(false) }
   }
+  if (!editing) return (
+    <div className="grid grid-cols-[5.25rem_1fr_auto] items-baseline gap-x-2 border-t border-line py-2 first:border-t-0 sm:grid-cols-[9rem_1fr_auto]">
+      <h3 className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">{title}</h3>
+      <div className="min-w-0">{filled ? view : <p className="text-sm text-ink-soft">{empty}</p>}</div>
+      {!readOnly ? (
+        <button type="button" aria-label={`${filled ? 'Modifica' : 'Compila'}: ${title}`} className="-my-1 grid h-9 w-9 place-items-center rounded-full text-sea hover:bg-sea-soft" onClick={() => setEditing(true)}>
+          {filled ? <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden><path d="M4 16l.8-3.4L13.6 3.8a1.4 1.4 0 012 0l.6.6a1.4 1.4 0 010 2L7.4 15.2z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>
+            : <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden><path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>}
+        </button>
+      ) : <span />}
+    </div>
+  )
   return (
-    <section className="border-t border-line py-4 first:border-t-0 first:pt-0">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        {!readOnly && !editing && <button type="button" className="text-sm font-semibold text-sea" onClick={() => setEditing(true)}>{filled ? 'Modifica' : 'Compila'}</button>}
-      </div>
-      {!editing ? <div className="mt-2">{filled ? view : <p className="text-sm text-ink-soft">{empty}</p>}</div> : (
-        <div className="mt-2 space-y-3">
-          {hint && <p className="text-sm text-ink-soft">{hint}</p>}
-          {children}
-          {error && <p role="alert" className="rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">{error}</p>}
-          <div className="grid grid-cols-2 gap-2">
-            <Button type="button" variant="ghost" onClick={() => { onCancel(); setEditing(false); setError(null) }}>Annulla</Button>
-            <Button type="button" disabled={busy} onClick={() => void save()}>{busy ? 'Salvo…' : 'Salva'}</Button>
-          </div>
+    <section className="my-2 rounded-xl border border-sea/40 bg-sand p-3">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <div className="mt-2 space-y-3">
+        {hint && <p className="text-sm text-ink-soft">{hint}</p>}
+        {children}
+        {error && <p role="alert" className="rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">{error}</p>}
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="button" variant="ghost" onClick={() => { onCancel(); setEditing(false); setError(null) }}>Annulla</Button>
+          <Button type="button" disabled={busy} onClick={() => void save()}>{busy ? 'Salvo…' : 'Salva'}</Button>
         </div>
-      )}
+      </div>
     </section>
   )
 }
@@ -58,15 +81,10 @@ function SkillBlock({ deck, kind, list, title, hint, empty, lists, readOnly, onC
   const options = pick(lists, list)
   const extra = sel.filter((v) => !options.some((o) => o.label === v))
   const groups = grouped(options)
-  const viewGroups = groups.map((g) => ({ group: g.group, items: g.items.filter((o) => mine.includes(o.label)).map((o) => o.label) })).filter((g) => g.items.length)
-  const loose = mine.filter((v) => !options.some((o) => o.label === v))
   return (
     <Block title={title} hint={hint} empty={empty} filled={mine.length > 0} readOnly={readOnly} dirty={sel.join('|') !== mine.join('|')}
       onSave={async () => { await setSkills(deck.person.id, kind, mine, sel); onChanged() }} onCancel={() => { setSel(mine); setOther('') }}
-      view={<div className="space-y-2">
-        {viewGroups.map((g) => <div key={g.group ?? '-'}>{g.group && <p className="mb-1 text-xs font-semibold text-ink-soft">{g.group}</p>}<div className="flex flex-wrap gap-1.5">{g.items.map((v) => <Tag key={v}>{v}</Tag>)}</div></div>)}
-        {loose.length > 0 && <div className="flex flex-wrap gap-1.5">{loose.map((v) => <Tag key={v}>{v}</Tag>)}</div>}
-      </div>}>
+      view={<Inline items={mine} />}>
       {groups.map((g) => (
         <fieldset key={g.group ?? '-'} className="min-w-0">
           {g.group && <legend className="mb-1.5 flex items-center gap-3 text-xs font-semibold text-ink-soft">{g.group}
@@ -109,19 +127,33 @@ export default function Curriculum({ deck, readOnly, onChanged }: { deck: Deck; 
     ['Tipologia di ingaggio', saved.engagement_types], ['Ruolo', saved.sought_roles], ['Disponibilità', saved.availability], ['Posizione contributiva', saved.tax_positions],
   ] as const
 
+  const validTitles = deck.titles.filter((t) => !t.archived_at && t.status !== 'rejected' && t.status !== 'draft').map((t) => t.name_it)
+  const log = deck.logbook.reduce((a, e) => ({ miles: a.miles + Number(e.miles ?? 0), days: a.days + (e.days ?? 0), nights: a.nights + (e.nights ?? 0) }), { miles: 0, days: 0, nights: 0 })
+  const facts = [[Math.round(log.miles).toLocaleString('it-IT'), 'miglia'], [String(log.days), 'giorni in mare'], [String(log.nights), 'notti'], [String(validTitles.length), validTitles.length === 1 ? 'titolo' : 'titoli']]
+
   return (
     <div>
+      <dl className="mb-2 grid grid-cols-4 divide-x divide-line rounded-xl bg-sand py-2 text-center">
+        {facts.map(([n, label]) => <div key={label} className="px-1"><dd className="text-lg leading-tight font-semibold tabular-nums">{n}</dd><dt className="text-[11px] leading-tight text-ink-soft">{label}</dt></div>)}
+      </dl>
+      {validTitles.length > 0 && (
+        <div className="grid grid-cols-[5.25rem_1fr_auto] items-baseline gap-x-2 py-2 sm:grid-cols-[9rem_1fr_auto]">
+          <h3 className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">Titoli</h3>
+          <Inline items={validTitles} max={5} /><span className="w-9" />
+        </div>
+      )}
+      <div className={validTitles.length > 0 ? 'border-t border-line' : ''}>
       <Block title="Chi sono" empty="Presentati in poche righe: è la prima cosa che legge chi valuta il tuo profilo." filled={!!saved.description} readOnly={readOnly} dirty={changed('description')}
         hint="Capacità nautiche e veliche, predisposizione al comando, capacità con le persone, il tuo carattere."
         onSave={() => saveProfile({ description: p.description?.trim() || null })} onCancel={reset}
-        view={<p className="text-sm whitespace-pre-wrap">{saved.description}</p>}>
+        view={<Clamp text={saved.description ?? ''} />}>
         <textarea rows={6} maxLength={3000} value={p.description ?? ''} onChange={(e) => setP({ ...p, description: e.target.value })} className="w-full rounded-xl border border-line bg-card p-3 text-base" />
         <p className="text-right text-xs text-ink-soft">{(p.description ?? '').length} di 3.000 caratteri</p>
       </Block>
 
       <Block title="Lingue" empty="Aggiungi le lingue che parli." filled={languages.length > 0} readOnly={readOnly} dirty={!!lang}
         onSave={async () => { if (lang) { await addRow('person_skill', { person_id: deck.person.id, kind: 'language', value: lang, level: level || null }); setLang(''); setLevel(''); onChanged() } }} onCancel={() => { setLang(''); setLevel('') }}
-        view={<div className="flex flex-wrap gap-1.5">{languages.map((l) => <Tag key={l.value}>{l.value}{l.level ? ` · ${l.level}` : ''}</Tag>)}</div>}>
+        view={<Inline items={languages.map((l) => `${l.value}${l.level ? ` (${l.level})` : ''}`)} />}>
         <div className="flex flex-wrap gap-1.5">
           {languages.map((l) => <Tag key={l.value}>{l.value}{l.level ? ` · ${l.level}` : ''}<button type="button" aria-label={`Togli ${l.value}`} className="ml-2 font-semibold text-sea" onClick={() => void removeSkill(deck.person.id, 'language', l.value).then(onChanged).catch((e) => window.alert(friendly(e)))}>Togli</button></Tag>)}
         </div>
@@ -133,21 +165,21 @@ export default function Curriculum({ deck, readOnly, onChanged }: { deck: Deck; 
         </div>
       </Block>
 
-      <SkillBlock deck={deck} kind="area" list="zone" title="Zone di navigazione" hint="Tocca le zone in cui hai navigato davvero." empty="Indica dove hai esperienza di navigazione." lists={lists} readOnly={readOnly} onChanged={onChanged} />
-      <SkillBlock deck={deck} kind="boat_type" list="boat_category" title="Imbarcazioni" hint="Le tipologie di barca su cui hai esperienza." empty="Indica su quali barche hai esperienza." lists={lists} readOnly={readOnly} onChanged={onChanged} />
-      <SkillBlock deck={deck} kind="technical" list="technical_skill" title="Competenze tecniche" hint="Scegli solo quelle in cui ti senti sicuro." empty="Indica le tue competenze nautiche." lists={lists} readOnly={readOnly} onChanged={onChanged} />
+      <SkillBlock deck={deck} kind="area" list="zone" title="Zone" hint="Tocca le zone in cui hai navigato davvero." empty="Indica dove hai esperienza di navigazione." lists={lists} readOnly={readOnly} onChanged={onChanged} />
+      <SkillBlock deck={deck} kind="boat_type" list="boat_category" title="Barche" hint="Le tipologie di barca su cui hai esperienza." empty="Indica su quali barche hai esperienza." lists={lists} readOnly={readOnly} onChanged={onChanged} />
+      <SkillBlock deck={deck} kind="technical" list="technical_skill" title="Competenze" hint="Scegli solo quelle in cui ti senti sicuro." empty="Indica le tue competenze nautiche." lists={lists} readOnly={readOnly} onChanged={onChanged} />
       <SkillBlock deck={deck} kind="soft" list="soft_skill" title="Soft skills" hint="Come lavori con le persone a bordo." empty="Indica le tue competenze trasversali." lists={lists} readOnly={readOnly} onChanged={onChanged} />
-      <SkillBlock deck={deck} kind="hobby" list="hobby" title="Hobby e passioni" hint="Aiutano a conoscerti e a comporre gli equipaggi." empty="Racconta cosa ti piace fare." lists={lists} readOnly={readOnly} onChanged={onChanged} />
+      <SkillBlock deck={deck} kind="hobby" list="hobby" title="Hobby" hint="Aiutano a conoscerti e a comporre gli equipaggi." empty="Racconta cosa ti piace fare." lists={lists} readOnly={readOnly} onChanged={onChanged} />
       <SkillBlock deck={deck} kind="sport" list="sport" title="Sport" hint="Gli sport che pratichi." empty="Indica gli sport che pratichi." lists={lists} readOnly={readOnly} onChanged={onChanged} />
 
       <Block title="Fumatore" empty="Non indicato." filled={saved.smoker !== null} readOnly={readOnly} dirty={changed('smoker')}
-        onSave={() => saveProfile({ smoker: p.smoker })} onCancel={reset} view={<Tag>{saved.smoker ? 'Sì' : 'No'}</Tag>}>
+        onSave={() => saveProfile({ smoker: p.smoker })} onCancel={reset} view={<p className="text-sm">{saved.smoker ? 'Sì' : 'No'}</p>}>
         <div className="flex gap-2"><Choice on={p.smoker === false} onClick={() => setP({ ...p, smoker: false })}>No</Choice><Choice on={p.smoker === true} onClick={() => setP({ ...p, smoker: true })}>Sì</Choice></div>
       </Block>
 
-      <Block title="Obiettivo professionale" empty="Scrivi cosa vuoi fare nel settore nautico." filled={!!saved.objective} readOnly={readOnly} dirty={changed('objective')}
+      <Block title="Obiettivo" empty="Scrivi cosa vuoi fare nel settore nautico." filled={!!saved.objective} readOnly={readOnly} dirty={changed('objective')}
         hint="Per esempio: ingaggi stagionali come skipper su imbarcazioni tra 15 e 20 metri."
-        onSave={() => saveProfile({ objective: p.objective?.trim() || null })} onCancel={reset} view={<p className="text-sm whitespace-pre-wrap">{saved.objective}</p>}>
+        onSave={() => saveProfile({ objective: p.objective?.trim() || null })} onCancel={reset} view={<Clamp text={saved.objective ?? ''} />}>
         <textarea rows={3} maxLength={1500} value={p.objective ?? ''} onChange={(e) => setP({ ...p, objective: e.target.value })} className="w-full rounded-xl border border-line bg-card p-3 text-base" />
       </Block>
 
@@ -157,10 +189,7 @@ export default function Curriculum({ deck, readOnly, onChanged }: { deck: Deck; 
           if (p.min_daily_rate !== null && (p.min_daily_rate < 0 || p.min_daily_rate > 5000)) throw new Error('Il compenso minimo giornaliero deve essere tra 0 e 5.000 euro: controlla la cifra.')
           await saveProfile({ engagement_types: p.engagement_types, sought_roles: p.sought_roles, availability: p.availability, tax_positions: p.tax_positions, min_daily_rate: p.min_daily_rate })
         }} onCancel={reset}
-        view={<dl className="space-y-2">
-          {seeking.filter(([, v]) => v.length > 0).map(([label, v]) => <div key={label}><dt className="mb-1 text-xs font-semibold text-ink-soft">{label}</dt><dd className="flex flex-wrap gap-1.5">{v.map((x) => <Tag key={x}>{x}</Tag>)}</dd></div>)}
-          {saved.min_daily_rate !== null && <div><dt className="mb-1 text-xs font-semibold text-ink-soft">Compenso minimo giornaliero netto</dt><dd><Tag>{saved.min_daily_rate} €</Tag></dd></div>}
-        </dl>}>
+        view={<Inline max={12} items={[...seeking.flatMap(([, v]) => v), ...(saved.min_daily_rate !== null ? [`da ${saved.min_daily_rate} € netti al giorno`] : [])]} />}>
         {multi('engagement_types', 'engagement_type', 'Tipologia di ingaggio')}
         {multi('sought_roles', 'sought_role', 'Ruolo')}
         {multi('availability', 'availability', 'Disponibilità')}
@@ -168,6 +197,7 @@ export default function Curriculum({ deck, readOnly, onChanged }: { deck: Deck; 
         <label className="block max-w-xs"><span className="mb-1 block text-xs font-semibold text-ink-soft">Compenso minimo giornaliero netto, in euro</span>
           <input type="number" inputMode="numeric" min={0} max={5000} step={10} value={p.min_daily_rate ?? ''} onChange={(e) => setP({ ...p, min_daily_rate: e.target.value === '' ? null : Number(e.target.value) })} className="h-12 w-full rounded-xl border border-line bg-card px-3 text-base" /></label>
       </Block>
+      </div>
     </div>
   )
 }
