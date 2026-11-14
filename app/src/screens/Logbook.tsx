@@ -124,9 +124,9 @@ function SeasonImport({ personId, existing, onChanged }: { personId: string; exi
   return (
     <div className="mt-3 space-y-3 rounded-xl bg-sand p-3">
       <p className="text-sm font-semibold">Carica il file della stagione</p>
-      <p className="text-sm text-ink-soft">Un file CSV con una riga per navigazione. Se usi Excel o Numbers, esporta il foglio in formato CSV. <button type="button" className="font-semibold text-sea" onClick={downloadTemplate}>Scarica il modello</button></p>
-      <input type="file" accept=".csv,text/csv" aria-label="File della stagione"
-        onChange={(e) => { const f = e.target.files?.[0]; setResult(null); setError(null); if (f) readSeasonFile(f, existing).then(setResult).catch(() => setError('Non siamo riusciti a leggere il file: controlla che sia un CSV e riprova.')) }}
+      <p className="text-sm text-ink-soft">Un file Excel (.xlsx) oppure CSV, con una riga per navigazione nel primo foglio. <button type="button" className="font-semibold text-sea" onClick={downloadTemplate}>Scarica il modello</button></p>
+      <input type="file" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="File della stagione"
+        onChange={(e) => { const f = e.target.files?.[0]; setResult(null); setError(null); if (f) readSeasonFile(f, existing).then(setResult).catch(() => setError('Non siamo riusciti a leggere il file: controlla che sia un Excel o un CSV e riprova.')) }}
         className="block w-full text-sm file:mr-3 file:h-11 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:text-sm file:font-semibold file:text-white" />
       {result?.fileProblem && <p role="alert" className="rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">{result.fileProblem}</p>}
       {result && !result.fileProblem && (

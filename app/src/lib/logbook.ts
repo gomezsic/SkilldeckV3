@@ -73,15 +73,25 @@ export function checkEntry(e: { from_date: string; to_date: string; miles: numbe
 export interface ImportRow { line: number; label: string; row: Record<string, unknown> | null; problems: string[]; overlap: string | null }
 export interface ImportResult { rows: ImportRow[]; fileProblem: string | null }
 
-/** Legge il file stagionale (CSV) e prepara le righe: quelle buone, quelle da correggere e quelle sovrapposte. */
+/** Legge il file stagionale (Excel o CSV) e prepara le righe: quelle buone, quelle da correggere e quelle sovrapposte. */
 export async function readSeasonFile(file: File, existing: LogEntry[]): Promise<ImportResult> {
   const name = file.name.toLowerCase()
-  if (/\.(xlsx|xls|numbers|ods)$/.test(name)) return { rows: [], fileProblem: 'Questo è un foglio di calcolo. Aprilo e scegli "Salva con nome" o "Esporta" in formato CSV, poi carica quel file.' }
-  if (!name.endsWith('.csv') && file.type !== 'text/csv') return { rows: [], fileProblem: 'Il file deve essere un CSV: scarica il modello qui sotto per vedere com\'è fatto.' }
-  if (file.size > 2 * 1024 * 1024) return { rows: [], fileProblem: 'Il file è troppo grande per essere un logbook stagionale (massimo 2 MB).' }
-  const text = await file.text()
-  const parsed = Papa.parse<string[]>(text.replace(/^﻿/, ''), { skipEmptyLines: 'greedy' })
-  const data = parsed.data
+  const isXlsx = name.endsWith('.xlsx')
+  if (/\.(xls|numbers|ods)$/.test(name)) return { rows: [], fileProblem: 'Questo formato non si legge direttamente. Apri il file e salvalo come Excel (.xlsx) oppure come CSV, poi carica quello.' }
+  if (!isXlsx && !name.endsWith('.csv') && file.type !== 'text/csv') return { rows: [], fileProblem: 'Il file deve essere un Excel (.xlsx) oppure un CSV: scarica il modello qui sotto per vedere com\'è fatto.' }
+  if (file.size > 5 * 1024 * 1024) return { rows: [], fileProblem: 'Il file è troppo grande per essere un logbook stagionale (massimo 5 MB).' }
+  let data: string[][]
+  if (isXlsx) {
+    try {
+      // La libreria per Excel si scarica solo quando serve, così l'app resta leggera.
+      const { default: readXlsx } = await import('read-excel-file')
+      const sheet = await readXlsx(file)
+      data = sheet.map((r) => r.map((c) => (c == null ? '' : c instanceof Date ? iso(c) : String(c)))).filter((r) => r.some((c) => c.trim() !== ''))
+    } catch { return { rows: [], fileProblem: 'Non siamo riusciti ad aprire questo file Excel: controlla che non sia protetto da password e che le navigazioni siano nel primo foglio.' } }
+  } else {
+    const text = await file.text()
+    data = Papa.parse<string[]>(text.replace(/^\uFEFF/, ''), { skipEmptyLines: 'greedy' }).data
+  }
   if (data.length < 2) return { rows: [], fileProblem: 'Il file è vuoto oppure contiene solo la riga dei titoli.' }
   const header = data[0].map((h) => COLUMNS[norm(String(h))] ?? null)
   const missing = REQUIRED.filter(([k]) => !header.includes(k)).map(([, label]) => label)
