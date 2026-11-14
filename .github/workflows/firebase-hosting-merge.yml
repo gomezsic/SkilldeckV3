@@ -2,6 +2,7 @@ name: Pubblica su Firebase Hosting (collaudo)
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
