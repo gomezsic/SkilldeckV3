@@ -39,7 +39,7 @@ Debolezze note, in ordine di importanza.
 
 1. **Quasi nulla è stato provato dal vivo da un utente vero.** È il rischio maggiore: finché l'owner non prova i moduli sul sito, i difetti di salvataggio restano nascosti. Il registro degli errori (area Sistema) ora li raccoglie da solo.
 2. **Posta di prova di Supabase**: rifiuta i domini aziendali e ha un tetto orario. Blocca le registrazioni con email. Serve la posta sul dominio skilldeckpro.com.
-3. **Indirizzo del sito in Supabase** ancora da impostare su https://skilldeckpro-v3.web.app (i link di conferma email altrimenti portano altrove). Lo fa l'owner.
+3. **Indirizzo del sito in Supabase**: impostato dall'owner il 14/11. Da confermare alla prima registrazione con email.
 4. **Protezione delle password compromesse** spenta in Supabase (segnalata dal controllo di Supabase). Si accende dal pannello, lo fa l'owner.
 5. **Il repository è pubblico**: consigliato renderlo privato.
 6. **Le prove automatiche coprono solo due moduli** (dati fiscali e logbook). Mancano quelle sulle fasce dei colloqui e sulle schermate.
