@@ -6,12 +6,13 @@ import { supabase } from '../lib/supabase'
 import ControlRoom from './ControlRoom'
 import People from './People'
 import PersonSheet from './PersonSheet'
+import Settings from './Settings'
 
 /**
  * Ambiente di lavoro dell'amministratore: pensato per il desktop, organizzato per aree di lavoro
  * (non per i quattro mondi dello skipper). Le aree non ancora costruite restano visibili come mappa.
  */
-type AreaId = 'regia' | 'persone' | 'formazione' | 'ingaggi' | 'bordo' | 'comunicazioni' | 'contenuti' | 'commerciale' | 'sistema'
+type AreaId = 'regia' | 'persone' | 'formazione' | 'ingaggi' | 'bordo' | 'comunicazioni' | 'contenuti' | 'commerciale' | 'sistema' | 'impostazioni'
 interface Area { id: AreaId; label: string; ready: boolean; items: string[]; when: string }
 const areas: Area[] = [
   { id: 'regia', label: 'Cabina di regia', ready: true, items: [], when: '' },
@@ -23,6 +24,7 @@ const areas: Area[] = [
   { id: 'contenuti', label: 'Contenuti', ready: false, when: 'Più avanti', items: ['Base di conoscenza e assistente di bordo', 'Portolano e guide', 'Glossario, traduzioni, COLREG'] },
   { id: 'commerciale', label: 'Commerciale', ready: false, when: 'Più avanti', items: ['Clienti', 'Recensioni', 'Sondaggi', 'Marketing e corsi'] },
   { id: 'sistema', label: 'Sistema', ready: false, when: 'Primo tempo', items: ['Registro delle azioni', 'Simulazione utente in sola lettura', 'Statistiche e attività', 'Errori e salute del database'] },
+  { id: 'impostazioni', label: 'Impostazioni', ready: true, items: [], when: '' },
 ]
 
 export default function AdminShell({ demo, badge }: { demo: boolean; badge: string }) {
@@ -76,6 +78,7 @@ export default function AdminShell({ demo, badge }: { demo: boolean; badge: stri
           {openPerson ? <div className="mx-auto max-w-3xl"><PersonSheet personId={openPerson} onBack={() => setOpenPerson(null)} /></div>
             : area === 'regia' ? <ControlRoom demo={demo} onOpen={setOpenPerson} />
             : area === 'persone' ? (demo ? <Placeholder title="Persone" when="" items={['Negli esempi l\'elenco delle persone non è disponibile: entra con il tuo utente.']} /> : <div><h1 className="text-2xl font-semibold">Persone</h1><p className="mt-1 text-sm text-ink-soft">Cerca chiunque e apri la sua scheda con i comandi.</p><People onOpen={setOpenPerson} /></div>)
+            : area === 'impostazioni' ? (demo ? <Placeholder title="Impostazioni" when="" items={['Negli esempi le impostazioni non sono disponibili: entra con il tuo utente.']} /> : <Settings />)
             : current ? <Placeholder title={current.label} when={current.when} items={current.items} /> : null}
         </div>
       </main>

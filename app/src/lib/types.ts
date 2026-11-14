@@ -26,11 +26,12 @@ export interface Title {
   id: string; code: string; name_it: string; status: TitleStatus
   expires_on: string | null; has_file: boolean; rejection_reason: string | null; file_path?: string | null
   number?: string | null; archived_at?: string | null
+  title_id?: string; issuer?: string | null; issued_on?: string | null; group_label?: string | null
 }
 export interface Compliance { requirement: Requirement; covered: boolean; covered_until: string | null; by_title: string | null }
 export interface IdentityDoc { id: string; kind: string; expires_on: string | null; file_path?: string | null; number?: string | null; archived_at?: string | null }
 export interface Insurance { id: string; kind: string; company: string | null; expires_on: string | null; file_path?: string | null; policy_number?: string | null; archived_at?: string | null }
-export interface Skill { id?: string; kind: 'language' | 'technical' | 'area' | 'boat_type'; value: string; level: string | null }
+export interface Skill { id?: string; kind: 'language' | 'technical' | 'area' | 'boat_type' | 'soft' | 'hobby' | 'sport'; value: string; level: string | null }
 export interface LogEntry {
   id: string; from_date: string; to_date: string; route: string | null
   miles: number | null; days: number | null; nights: number | null; source: 'declared' | 'imported' | 'generated'
@@ -51,4 +52,7 @@ export interface Deck {
   logbook: LogEntry[]
   tax: TaxProfile | null
   preferences: Preferences | null
+  profile?: Profile | null
 }
+
+export interface Profile { description: string | null; objective: string | null; smoker: boolean | null; engagement_types: string[]; sought_roles: string[]; availability: string[]; tax_positions: string[]; min_daily_rate: number | null }

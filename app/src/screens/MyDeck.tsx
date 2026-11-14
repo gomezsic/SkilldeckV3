@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
-import { Button, Chip, Empty, Field, FileField, Row, Section } from '../components/ui'
+import { useState } from 'react'
+import { Button, Chip, Empty, Field, Row, Section } from '../components/ui'
 import { friendly, say, useUnsaved } from '../lib/friendly'
-import { addRow, archiveRow, declareTitle, deleteRow, listCatalog, openFile, removeSkill, saveOne, savePersonalData, updateRow, uploadFile } from '../lib/deck'
+import { addRow, archiveRow, deleteRow, openFile, saveOne, savePersonalData, updateRow, uploadFile } from '../lib/deck'
+import TitleForm from './TitleForm'
+import Curriculum from './Curriculum'
 import { ConfirmLink, MiniForm, dateLimits, expiredWarning, num, str } from './DeckForms'
 import type { FieldSpec } from './DeckForms'
 import {
-  appliedAsLabel, capabilityLabel, daysTo, fmtDate, identityKindLabel, requirementLabel,
-  skillKindLabel, sourceLabel, statusLabel, stepLabel, stepStatusLabel, titleStatusLabel,
+  appliedAsLabel, capabilityLabel, daysTo, fmtDate, identityKindLabel, requirementLabel, sourceLabel, statusLabel, stepLabel, stepStatusLabel, titleStatusLabel,
 } from '../lib/labels'
 import type { Deck, LogEntry, Person, Title } from '../lib/types'
 
@@ -130,14 +131,11 @@ export default function MyDeck({ deck, readOnly, onChanged, admin = false }: { d
         {titles.length === 0 ? <Empty>Carica qui patente, SRC e First Aid: servono per essere in regola.</Empty>
           : <ul className="divide-y divide-line">{titles.map((t) => (
             <TitleRow key={t.id} t={t}>
-              {!readOnly && (admin || t.status !== 'verified') && <MiniForm small open="Modifica" warn={expiredWarning} fields={[
-                { name: 'expires_on', label: 'Scadenza (lascia vuoto se non scade)', type: 'date', initial: t.expires_on ?? '', min: dateLimits.expiry.min, max: dateLimits.expiry.max },
-                { name: 'number', label: 'Numero (facoltativo)', initial: t.number ?? '' },
-              ]} onSave={async (v) => { await updateRow('person_title', t.id, { expires_on: str(v.expires_on), number: str(v.number) }); onChanged() }} />}
+              {!readOnly && (admin || t.status !== 'verified') && <TitleForm small personId={person.id} owned={titles} edit={t} label={t.status === 'draft' ? 'Completa e carica il documento' : t.status === 'rejected' ? 'Correggi e ricarica' : 'Modifica'} onChanged={onChanged} />}
               {admin && <ConfirmLink label="Archivia" question="Lo tolgo dalla scheda? Resta in archivio e si può ripristinare." yes="Sì, archivia" onConfirm={async () => { await archiveRow('person_title', t.id); onChanged() }} />}
             </TitleRow>
           ))}</ul>}
-        {readOnly ? null : <AddTitle personId={person.id} onChanged={onChanged} />}
+        {readOnly ? null : <TitleForm personId={person.id} owned={titles} onChanged={onChanged} />}
       </Section>
 
       <Section title="Documenti e assicurazioni" summary={identity.length + insurance.length ? `${identity.length + insurance.length} caricati` : 'Nessun documento caricato'}>
@@ -204,31 +202,8 @@ export default function MyDeck({ deck, readOnly, onChanged, admin = false }: { d
         )}
       </Section>
 
-      <Section title="Competenze e lingue" summary={deck.skills.length ? `${deck.skills.length} voci` : 'Ancora da compilare'}>
-        {deck.skills.length === 0 ? <Empty>Lingue, competenze tecniche, zone e tipi di barca che conosci.</Empty> : (
-          <div className="space-y-3">
-            {(['language', 'technical', 'area', 'boat_type'] as const).map((k) => {
-              const items = deck.skills.filter((s) => s.kind === k)
-              return items.length === 0 ? null : (
-                <div key={k}>
-                  <h3 className="text-xs font-semibold text-ink-soft">{skillKindLabel[k]}</h3>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {items.map((s) => (
-                      <Chip key={s.value}>{s.value}{s.level ? ` · ${s.level}` : ''}
-                        {!readOnly && <button type="button" aria-label={`Togli ${s.value}`} className="ml-1.5 text-sm leading-none text-ink-soft" onClick={() => void removeSkill(person.id, k, s.value).then(onChanged).catch(alertError)}>×</button>}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        {!readOnly && <MiniForm open="Aggiungi una voce" submit="Aggiungi" fields={[
-          { name: 'kind', label: 'Che cosa', type: 'select', required: true, options: Object.entries(skillKindLabel).map(([value, label]) => ({ value, label })) },
-          { name: 'value', label: 'Voce', required: true, placeholder: 'Per esempio: Inglese, Catamarano, Grecia ionica' },
-          { name: 'level', label: 'Livello (facoltativo)', placeholder: 'Per esempio: B2' },
-        ]} onSave={async (v) => { await addRow('person_skill', { person_id: person.id, kind: v.kind, value: str(v.value), level: str(v.level) }); onChanged() }} />}
+      <Section title="Curriculum" summary={deck.profile?.description || deck.skills.length ? `${deck.skills.length} voci · ${deck.profile?.description ? 'presentazione scritta' : 'manca la presentazione'}` : 'Ancora da compilare'}>
+        <Curriculum deck={deck} readOnly={readOnly} onChanged={onChanged} />
       </Section>
 
       <Section title="Logbook" summary={deck.logbook.length ? `${Math.round(totals.miles)} miglia · ${totals.days} giorni · ${totals.nights} notti` : canLog ? 'Nessuna navigazione registrata' : 'Disponibile quando sei In percorso'}>
@@ -393,41 +368,3 @@ function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnl
 }
 
 function alertError(e: unknown) { console.error(e); window.alert(friendly(e, 'aprire il file')) }
-
-function AddTitle({ personId, onChanged }: { personId: string; onChanged: () => void }) {
-  const [open, setOpen] = useState(false)
-  const [catalog, setCatalog] = useState<{ id: string; name_it: string }[]>([])
-  const [titleId, setTitleId] = useState(''); const [expires, setExpires] = useState(''); const [number, setNumber] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null)
-  useEffect(() => { if (open && catalog.length === 0) listCatalog().then(setCatalog).catch((e) => setError(friendly(e, 'leggere l\'elenco dei titoli'))) }, [open, catalog.length])
-
-  useUnsaved(open && (!!file || !!titleId || !!expires || !!number))
-  if (!open) return <Button variant="ghost" className="mt-3" onClick={() => setOpen(true)}>Aggiungi un titolo</Button>
-  const submit = async () => {
-    if (!file || !titleId) return
-    setBusy(true); setError(null)
-    try {
-      await declareTitle(personId, { titleId, expiresOn: expires || null, number: number.trim() || null, file })
-      setOpen(false); setFile(null); setTitleId(''); setExpires(''); setNumber(''); onChanged(); say('Titolo caricato')
-    } catch (e) { setError(friendly(e, 'caricare il titolo')) } finally { setBusy(false) }
-  }
-  return (
-    <form className="mt-3 space-y-3 rounded-xl bg-sand p-3" onSubmit={(e) => { e.preventDefault(); void submit() }}>
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-ink-soft">Quale titolo</span>
-        <select required value={titleId} onChange={(e) => setTitleId(e.target.value)} className="h-12 w-full rounded-xl border border-line bg-card px-3 text-base">
-          <option value="" disabled>Scegli…</option>
-          {catalog.map((c) => <option key={c.id} value={c.id}>{c.name_it}</option>)}
-        </select>
-      </label>
-      <Field label="Scadenza (lascia vuoto se non scade)" type="date" min={dateLimits.expiry.min} max={dateLimits.expiry.max} value={expires} onChange={(e) => setExpires(e.target.value)} />
-      <Field label="Numero (facoltativo)" value={number} onChange={(e) => setNumber(e.target.value)} />
-      <FileField label="File del titolo: PDF o foto, massimo 10 MB" required onFile={setFile} />
-      {expiredWarning({ expires_on: expires }) && <p role="status" className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">{expiredWarning({ expires_on: expires })}</p>}
-      {error && <p role="alert" className="text-sm text-bad">{error}</p>}
-      <Button type="submit" disabled={busy || !file || !titleId}>{busy ? 'Carico…' : 'Carica e dichiara'}</Button>
-      <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Annulla</Button>
-    </form>
-  )
-}

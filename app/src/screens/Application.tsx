@@ -81,7 +81,8 @@ export default function Application({ session, kind, firstError, onDone }: { ses
         const m = error.message.toLowerCase()
         setErrors([m.includes('already') ? 'Con questa email esiste già un accesso: torna indietro e premi "Entra".'
           : m.includes('is invalid') ? 'Questo indirizzo email non viene accettato. Controlla di averlo scritto bene, oppure prova con un altro indirizzo.'
-          : m.includes('rate limit') || m.includes('security purposes') ? 'Troppi tentativi ravvicinati: aspetta un minuto e riprova.'
+          : m.includes('rate limit') ? 'In questo momento non riusciamo a mandare altre email di conferma: è un limite del servizio di posta e si sblocca entro un\'ora. Quello che hai scritto resta salvato: riprova più tardi oppure usa "Continua con Google".'
+          : m.includes('security purposes') ? 'Hai appena fatto una richiesta: aspetta un minuto e riprova.'
           : friendly(error, 'creare il tuo accesso')])
       } else if (data.user && data.user.identities?.length === 0) setErrors(['Con questa email esiste già un accesso: torna indietro e premi "Entra".'])
       else if (!data.session) { setTouched(false); setSent('confirm-email') }

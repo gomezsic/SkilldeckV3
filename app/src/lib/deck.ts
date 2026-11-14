@@ -16,10 +16,10 @@ export async function loadDeck(personId?: string): Promise<Deck | null> {
   if (!person) return null
   const pid = (person as Person).id
 
-  const [caps, plans, titles, compliance, identity, insurance, skills, logbook, tax, prefs] = await Promise.all([
+  const [caps, plans, titles, compliance, identity, insurance, skills, logbook, tax, prefs, profile] = await Promise.all([
     supabase.from('person_capability').select('capability, status').eq('person_id', pid),
     supabase.from('path_plan').select('id, goal_capability, status, path_step(id, kind, position, status, done_at)').eq('person_id', pid).order('created_at'),
-    supabase.from('person_title').select('id, status, expires_on, number, archived_at, file_id, rejection_reason, title_catalog(code, name_it), file(storage_path)').eq('person_id', pid).neq('status', 'replaced'),
+    supabase.from('person_title').select('id, title_id, status, expires_on, issued_on, issuer, number, archived_at, file_id, rejection_reason, title_catalog(code, name_it, group_label), file(storage_path)').eq('person_id', pid).neq('status', 'replaced'),
     supabase.rpc('compliance', { p_person: pid }),
     supabase.from('identity_document').select('id, kind, number, expires_on, archived_at, file(storage_path)').eq('person_id', pid),
     supabase.from('insurance').select('id, kind, company, policy_number, expires_on, archived_at, file(storage_path)').eq('person_id', pid),
@@ -27,8 +27,9 @@ export async function loadDeck(personId?: string): Promise<Deck | null> {
     supabase.from('logbook_entry').select('id, from_date, to_date, route, miles, days, nights, source, role_on_board, boat_name, boat_type').eq('person_id', pid).order('from_date', { ascending: false }),
     supabase.from('tax_profile').select('tax_code, tax_regime, vat_number, iban, account_holder').eq('person_id', pid).maybeSingle(),
     supabase.from('person_preferences').select('privacy_consent_at, marketing_opt_out, showcase_consent').eq('person_id', pid).maybeSingle(),
+    supabase.from('person_profile').select('description, objective, smoker, engagement_types, sought_roles, availability, tax_positions, min_daily_rate').eq('person_id', pid).maybeSingle(),
   ])
-  for (const r of [caps, plans, titles, compliance, identity, insurance, skills, logbook, tax, prefs]) {
+  for (const r of [caps, plans, titles, compliance, identity, insurance, skills, logbook, tax, prefs, profile]) {
     if (r.error) throw r.error
   }
 
@@ -42,12 +43,14 @@ export async function loadDeck(personId?: string): Promise<Deck | null> {
     titles: (titles.data ?? []).map((t: any): Title => ({
       id: t.id, code: t.title_catalog?.code ?? '', name_it: t.title_catalog?.name_it ?? 'Titolo',
       status: t.status, expires_on: t.expires_on, has_file: !!t.file_id, rejection_reason: t.rejection_reason, file_path: t.file?.storage_path ?? null, number: t.number, archived_at: t.archived_at,
+      title_id: t.title_id, issuer: t.issuer, issued_on: t.issued_on, group_label: t.title_catalog?.group_label ?? null,
     })),
     compliance: compliance.data ?? [],
     identity: (identity.data ?? []).map((d: any) => ({ id: d.id, kind: d.kind, number: d.number, expires_on: d.expires_on, archived_at: d.archived_at, file_path: d.file?.storage_path ?? null })),
     insurance: (insurance.data ?? []).map((d: any) => ({ id: d.id, kind: d.kind, company: d.company, policy_number: d.policy_number, expires_on: d.expires_on, archived_at: d.archived_at, file_path: d.file?.storage_path ?? null })),
     skills: skills.data ?? [],
     logbook: logbook.data ?? [],
+    profile: profile.data ?? null,
     tax: tax.data ?? null,
     preferences: prefs.data ?? null,
   }
@@ -62,12 +65,6 @@ const BUCKET = 'documenti'
 export const MAX_FILE_BYTES = 10 * 1024 * 1024
 export const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
 
-export async function listCatalog(): Promise<{ id: string; name_it: string }[]> {
-  const { data, error } = await supabase.from('title_catalog').select('id, name_it, category, command_level').eq('is_active', true).order('category').order('command_level')
-  if (error) throw error
-  return data ?? []
-}
-
 /** Carica un file nella cartella della persona e lo registra. Restituisce l'id del file. */
 export async function uploadFile(personId: string, folder: string, file: File, linkedTable: string): Promise<string> {
   if (!ACCEPTED_TYPES.includes(file.type)) throw new Error('Formato non ammesso: usa PDF, JPG, PNG o WEBP.')
@@ -81,9 +78,20 @@ export async function uploadFile(personId: string, folder: string, file: File, l
   return f.data.id
 }
 
-export async function declareTitle(personId: string, input: { titleId: string; expiresOn: string | null; number: string | null; file: File }) {
-  const fileId = await uploadFile(personId, 'titoli', input.file, 'person_title')
-  const t = await supabase.from('person_title').insert({ person_id: personId, title_id: input.titleId, status: 'declared', expires_on: input.expiresOn, number: input.number, file_id: fileId })
+export interface TitleInput { titleId: string; issuer: string | null; number: string | null; issuedOn: string | null; expiresOn: string | null; file: File | null }
+/** Dichiara un titolo nuovo (con il file) oppure completa o corregge uno esistente. */
+export async function saveTitle(personId: string, input: TitleInput, existing?: { id: string; status: string }) {
+  const fileId = input.file ? await uploadFile(personId, 'titoli', input.file, 'person_title') : null
+  const row: Record<string, unknown> = { title_id: input.titleId, issuer: input.issuer, number: input.number, issued_on: input.issuedOn, expires_on: input.expiresOn }
+  if (fileId) row.file_id = fileId
+  if (!existing) {
+    const t = await supabase.from('person_title').insert({ person_id: personId, status: 'declared', ...row })
+    if (t.error) throw t.error
+    return
+  }
+  // Una bozza (o un titolo rifiutato) con il file diventa "dichiarato" e torna in verifica.
+  if (fileId && (existing.status === 'draft' || existing.status === 'rejected')) { row.status = 'declared'; row.rejection_reason = null }
+  const t = await supabase.from('person_title').update(row).eq('id', existing.id)
   if (t.error) throw t.error
 }
 
@@ -93,7 +101,7 @@ export async function addRow(table: 'identity_document' | 'insurance' | 'person_
   if (error) throw error
 }
 /** Scrive la riga unica di dati fiscali o preferenze (la crea se manca). */
-export async function saveOne(table: 'tax_profile' | 'person_preferences', personId: string, patch: Record<string, unknown>) {
+export async function saveOne(table: 'tax_profile' | 'person_preferences' | 'person_profile', personId: string, patch: Record<string, unknown>) {
   const { error } = await supabase.from(table).upsert({ person_id: personId, ...patch }, { onConflict: 'person_id' })
   if (error) throw error
 }
@@ -134,4 +142,11 @@ async function actorId(): Promise<string> {
   if (error) throw error
   actor = data.id
   return data.id
+}
+
+/** Sostituisce le voci di un tipo (zone, competenze, hobby…) con quelle scelte: aggiunge le nuove, toglie le altre. */
+export async function setSkills(personId: string, kind: string, before: string[], after: string[]) {
+  const add = after.filter((v) => !before.includes(v)); const remove = before.filter((v) => !after.includes(v))
+  if (add.length) { const { error } = await supabase.from('person_skill').insert(add.map((value) => ({ person_id: personId, kind, value }))); if (error) throw error }
+  if (remove.length) { const { error } = await supabase.from('person_skill').delete().eq('person_id', personId).eq('kind', kind).in('value', remove); if (error) throw error }
 }

@@ -65,12 +65,18 @@ export const demoDecks: Record<string, Deck> = {
     insurance: [{ id: 'a1', kind: 'Responsabilità civile skipper', company: 'Compagnia di esempio', expires_on: iso(200) }],
     skills: [
       { kind: 'language', value: 'Italiano', level: 'Madrelingua' }, { kind: 'language', value: 'Inglese', level: 'C1' }, { kind: 'language', value: 'Francese', level: 'B1' },
-      { kind: 'technical', value: 'Motori diesel', level: null }, { kind: 'boat_type', value: 'Catamarano', level: null }, { kind: 'area', value: 'Grecia ionica', level: null },
+      { kind: 'technical', value: 'Manutenzione motore diesel', level: null }, { kind: 'technical', value: 'Navigazione notturna', level: null }, { kind: 'boat_type', value: 'Catamarano a vela · Cruiser 43-54 piedi', level: null }, { kind: 'area', value: 'Ioniche', level: null }, { kind: 'area', value: 'Cicladi', level: null }, { kind: 'area', value: 'Sardegna', level: null },
+      { kind: 'soft', value: 'Leadership calma e positiva', level: null }, { kind: 'hobby', value: 'Fotografia', level: null }, { kind: 'sport', value: 'Vela', level: null }, { kind: 'sport', value: 'Nuoto', level: null },
     ],
     logbook: [
       { id: 'l3', from_date: iso(-60), to_date: iso(-53), route: 'Olbia – La Maddalena – Olbia', miles: 160, days: 7, nights: 0, source: 'generated' },
       { id: 'l4', from_date: iso(-300), to_date: iso(-280), route: 'Las Palmas – Mindelo', miles: 870, days: 8, nights: 7, source: 'declared' },
     ],
+    profile: {
+      description: 'Skipper affidabile e orientata alla sicurezza. Numerose tratte come comandante su barche a vela fino a 50 piedi. Grande attenzione all\'equipaggio, alla pianificazione meteo e alla manutenzione di bordo.',
+      objective: 'Ingaggi stagionali come skipper su imbarcazioni tra 15 e 20 metri.', smoker: false,
+      engagement_types: ['Ingaggio stagionale', 'A settimana'], sought_roles: ['Comandante'], availability: ['Solo estate'], tax_positions: ['Partita IVA'], min_daily_rate: 200,
+    },
     tax: { tax_code: '••••••••••••X123', tax_regime: 'Forfettario', vat_number: '•••••••4321', iban: 'IT•• •••• •••• 9876' },
   },
 }

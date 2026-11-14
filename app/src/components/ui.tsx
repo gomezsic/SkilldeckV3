@@ -1,5 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { fileProblem, fileSize, onSay } from '../lib/friendly'
+import { lighten } from '../lib/image'
+import CropDialog from './CropDialog'
 
 type Tone = 'neutral' | 'ok' | 'warn' | 'bad' | 'sea'
 const toneClass: Record<Tone, string> = {
@@ -61,23 +63,51 @@ export function Field({ label, ...rest }: React.InputHTMLAttributes<HTMLInputEle
   )
 }
 
-/** Scelta di un file con controllo immediato: se il formato o il peso non vanno, lo dice subito e spiega cosa fare. */
+/**
+ * Scelta di un file con controllo immediato: se il formato o il peso non vanno, lo dice subito e spiega cosa fare.
+ * Le foto vengono alleggerite da sole e si possono ritagliare e raddrizzare; i PDF passano come sono.
+ */
 export function FileField({ label, required, onFile }: { label: string; required?: boolean; onFile: (file: File | null) => void }) {
   const [chosen, setChosen] = useState<File | null>(null)
+  const [original, setOriginal] = useState<File | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
+  const [note, setNote] = useState<string | null>(null)
+  const [cropping, setCropping] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
+  useEffect(() => {
+    if (!chosen || !chosen.type.startsWith('image/')) { setPreview(null); return }
+    const u = URL.createObjectURL(chosen); setPreview(u); return () => URL.revokeObjectURL(u)
+  }, [chosen])
+  const take = async (f: File | null, input?: HTMLInputElement) => {
+    setNote(null)
+    const p = f ? fileProblem(f) : null
+    if (!f || p) { if (input) input.value = ''; setChosen(null); setOriginal(null); setProblem(p); onFile(null); return }
+    setOriginal(f)
+    const light = await lighten(f)
+    if (light !== f) setNote(`Foto alleggerita da ${fileSize(f.size)} a ${fileSize(light.size)}: si legge bene e si carica prima.`)
+    setChosen(light); setProblem(null); onFile(light)
+  }
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-ink-soft">{label}</span>
-      <input required={required} type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
-        onChange={(e) => {
-          const f = e.target.files?.[0] ?? null
-          const p = f ? fileProblem(f) : null
-          if (p) { e.target.value = ''; setChosen(null); setProblem(p); onFile(null) } else { setChosen(f); setProblem(null); onFile(f) }
-        }}
-        className="block w-full text-sm file:mr-3 file:h-11 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:text-sm file:font-semibold file:text-white" />
-      {chosen && <span className="mt-1 block text-xs text-ok">File pronto: {chosen.name} · {fileSize(chosen.size)}</span>}
+    <div>
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-ink-soft">{label}</span>
+        <input required={required && !chosen} type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
+          onChange={(e) => void take(e.target.files?.[0] ?? null, e.target)}
+          className="block w-full text-sm file:mr-3 file:h-11 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:text-sm file:font-semibold file:text-white" />
+      </label>
+      {chosen && (
+        <div className="mt-2 flex items-center gap-3">
+          {preview && <img src={preview} alt="Anteprima del file scelto" className="h-16 w-16 rounded-lg border border-line object-cover" />}
+          <div className="min-w-0 text-xs">
+            <p className="truncate text-ok">File pronto: {chosen.name} · {fileSize(chosen.size)}</p>
+            {note && <p className="text-ink-soft">{note}</p>}
+            {preview && original && <button type="button" className="mt-1 font-semibold text-sea" onClick={() => setCropping(true)}>Ritaglia o raddrizza la foto</button>}
+          </div>
+        </div>
+      )}
       {problem && <span role="alert" className="mt-1 block rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">{problem}</span>}
-    </label>
+      {cropping && original && <CropDialog file={original} onCancel={() => setCropping(false)} onDone={(f) => { setCropping(false); setChosen(f); setNote('Foto ritagliata.'); onFile(f) }} />}
+    </div>
   )
 }
 
