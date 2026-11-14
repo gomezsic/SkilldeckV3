@@ -1,6 +1,6 @@
 # 00 · Bussola
 
-Aggiornata il **14 novembre 2026, ore 16:30**. Ultima migrazione: **0015**. Sito di collaudo: https://skilldeckpro-v3.web.app
+Aggiornata il **14 novembre 2026, ore 16:40**. Ultima migrazione: **0016**. Sito di collaudo: https://skilldeckpro-v3.web.app
 
 ## Dove siamo
 
@@ -41,12 +41,11 @@ Debolezze note, in ordine di importanza.
 2. **Posta di prova di Supabase**: rifiuta i domini aziendali e ha un tetto orario. Blocca le registrazioni con email. Serve la posta sul dominio skilldeckpro.com.
 3. **Indirizzo del sito in Supabase** ancora da impostare su https://skilldeckpro-v3.web.app (i link di conferma email altrimenti portano altrove). Lo fa l'owner.
 4. **Protezione delle password compromesse** spenta in Supabase (segnalata dal controllo di Supabase). Si accende dal pannello, lo fa l'owner.
-5. **La coda "Pronti per Ready" non esclude le persone archiviate.**
-6. **Il repository è pubblico**: consigliato renderlo privato.
-7. **Le prove automatiche coprono solo due moduli** (dati fiscali e logbook). Mancano quelle sulle fasce dei colloqui e sulle schermate.
-8. **Nessuna prova automatica del database.** Le regole di accesso sono state provate a mano, non c'è una serie ripetibile.
-9. **I livelli di cucina e di competenza e i prefissi telefonici** sono ancora fissi nel codice.
-10. **App Google in modalità Test**: entrano solo gli utenti di prova aggiunti dall'owner.
+5. **Il repository è pubblico**: consigliato renderlo privato.
+6. **Le prove automatiche coprono solo due moduli** (dati fiscali e logbook). Mancano quelle sulle fasce dei colloqui e sulle schermate.
+7. **Nessuna prova automatica del database.** Le regole di accesso sono state provate a mano, non c'è una serie ripetibile.
+8. **I livelli di cucina e di competenza e i prefissi telefonici** sono ancora fissi nel codice.
+9. **App Google in modalità Test**: entrano solo gli utenti di prova aggiunti dall'owner.
 
 ## Cosa manca per chiudere il profilo
 
