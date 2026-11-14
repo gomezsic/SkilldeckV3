@@ -1,0 +1,19 @@
+name: Pubblica su Firebase Hosting (collaudo)
+on:
+  push:
+    branches: [main]
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app/package-lock.json }
+      - run: npm ci && npm run build
+        working-directory: app
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SKILLDECKPRO_V3 }}
+          channelId: live
+          projectId: skilldeckpro-v3
