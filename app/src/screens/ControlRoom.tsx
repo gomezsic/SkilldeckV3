@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Chip } from '../components/ui'
 import { appliedAsLabel, capabilityLabel, fmtDate, stepLabel } from '../lib/labels'
+import { friendly } from '../lib/friendly'
 import { supabase } from '../lib/supabase'
 
 interface Item { id: string; personId?: string; name: string; detail: string; since: string | null }
@@ -67,7 +68,7 @@ export const demoBoard: Board = {
 export default function ControlRoom({ demo, onOpen: setOpenPerson }: { demo: boolean; onOpen: (personId: string) => void }) {
   const [board, setBoard] = useState<Board | null>(demo ? demoBoard : null)
   const [error, setError] = useState<string | null>(null)
-  const reload = () => { if (!demo) loadBoard().then(setBoard).catch((e) => setError(e?.message ?? 'Errore di caricamento')) }
+  const reload = () => { if (!demo) loadBoard().then(setBoard).catch((e) => setError(friendly(e, 'leggere i dati'))) }
   useEffect(reload, [demo])
 
 

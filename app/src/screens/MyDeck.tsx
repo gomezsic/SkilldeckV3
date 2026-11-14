@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Chip, Empty, Field, Row, Section } from '../components/ui'
+import { Button, Chip, Empty, Field, FileField, Row, Section } from '../components/ui'
+import { friendly, say, useUnsaved } from '../lib/friendly'
 import { addRow, archiveRow, declareTitle, deleteRow, listCatalog, openFile, removeSkill, saveOne, savePersonalData, updateRow, uploadFile } from '../lib/deck'
 import { ConfirmLink, MiniForm, dateLimits, expiredWarning, num, str } from './DeckForms'
 import type { FieldSpec } from './DeckForms'
@@ -214,7 +215,7 @@ export default function MyDeck({ deck, readOnly, onChanged, admin = false }: { d
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {items.map((s) => (
                       <Chip key={s.value}>{s.value}{s.level ? ` · ${s.level}` : ''}
-                        {!readOnly && <button type="button" aria-label={`Togli ${s.value}`} className="ml-1.5 text-sm leading-none text-ink-soft" onClick={() => void removeSkill(person.id, k, s.value).then(onChanged)}>×</button>}
+                        {!readOnly && <button type="button" aria-label={`Togli ${s.value}`} className="ml-1.5 text-sm leading-none text-ink-soft" onClick={() => void removeSkill(person.id, k, s.value).then(onChanged).catch(alertError)}>×</button>}
                       </Chip>
                     ))}
                   </div>
@@ -337,6 +338,7 @@ function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnl
   const [form, setForm] = useState({ first_name: person.first_name, last_name: person.last_name, phone: person.phone ?? '', birth_date: person.birth_date ?? '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  useUnsaved(editing && (form.first_name !== person.first_name || form.last_name !== person.last_name || form.phone !== (person.phone ?? '') || form.birth_date !== (person.birth_date ?? '')))
 
   if (!editing) {
     return (
@@ -362,8 +364,8 @@ function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnl
         first_name: form.first_name.trim(), last_name: form.last_name.trim(),
         phone: form.phone.trim() || null, birth_date: form.birth_date || null, ui_language: person.ui_language,
       })
-      setEditing(false); onChanged()
-    } catch (e) { setError((e as { message?: string })?.message ?? 'Salvataggio non riuscito') } finally { setBusy(false) }
+      setEditing(false); onChanged(); say('Dati personali salvati')
+    } catch (e) { setError(friendly(e)) } finally { setBusy(false) }
   }
   return (
     <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void save() }}>
@@ -378,7 +380,7 @@ function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnl
   )
 }
 
-function alertError(e: unknown) { console.error(e) }
+function alertError(e: unknown) { console.error(e); window.alert(friendly(e, 'aprire il file')) }
 
 function AddTitle({ personId, onChanged }: { personId: string; onChanged: () => void }) {
   const [open, setOpen] = useState(false)
@@ -386,16 +388,17 @@ function AddTitle({ personId, onChanged }: { personId: string; onChanged: () => 
   const [titleId, setTitleId] = useState(''); const [expires, setExpires] = useState(''); const [number, setNumber] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null)
-  useEffect(() => { if (open && catalog.length === 0) listCatalog().then(setCatalog).catch((e) => setError(e?.message ?? 'Errore')) }, [open, catalog.length])
+  useEffect(() => { if (open && catalog.length === 0) listCatalog().then(setCatalog).catch((e) => setError(friendly(e, 'leggere l\'elenco dei titoli'))) }, [open, catalog.length])
 
+  useUnsaved(open && (!!file || !!titleId || !!expires || !!number))
   if (!open) return <Button variant="ghost" className="mt-3" onClick={() => setOpen(true)}>Aggiungi un titolo</Button>
   const submit = async () => {
     if (!file || !titleId) return
     setBusy(true); setError(null)
     try {
       await declareTitle(personId, { titleId, expiresOn: expires || null, number: number.trim() || null, file })
-      setOpen(false); setFile(null); setTitleId(''); setExpires(''); setNumber(''); onChanged()
-    } catch (e) { setError((e as { message?: string })?.message ?? 'Caricamento non riuscito') } finally { setBusy(false) }
+      setOpen(false); setFile(null); setTitleId(''); setExpires(''); setNumber(''); onChanged(); say('Titolo caricato')
+    } catch (e) { setError(friendly(e, 'caricare il titolo')) } finally { setBusy(false) }
   }
   return (
     <form className="mt-3 space-y-3 rounded-xl bg-sand p-3" onSubmit={(e) => { e.preventDefault(); void submit() }}>
@@ -408,10 +411,7 @@ function AddTitle({ personId, onChanged }: { personId: string; onChanged: () => 
       </label>
       <Field label="Scadenza (lascia vuoto se non scade)" type="date" min={dateLimits.expiry.min} max={dateLimits.expiry.max} value={expires} onChange={(e) => setExpires(e.target.value)} />
       <Field label="Numero (facoltativo)" value={number} onChange={(e) => setNumber(e.target.value)} />
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-ink-soft">File del titolo: PDF o foto, massimo 10 MB</span>
-        <input required type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="block w-full text-sm file:mr-3 file:h-11 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:text-sm file:font-semibold file:text-white" />
-      </label>
+      <FileField label="File del titolo: PDF o foto, massimo 10 MB" required onFile={setFile} />
       {expiredWarning({ expires_on: expires }) && <p role="status" className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">{expiredWarning({ expires_on: expires })}</p>}
       {error && <p role="alert" className="text-sm text-bad">{error}</p>}
       <Button type="submit" disabled={busy || !file || !titleId}>{busy ? 'Carico…' : 'Carica e dichiara'}</Button>

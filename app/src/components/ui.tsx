@@ -1,4 +1,5 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
+import { fileProblem, fileSize, onSay } from '../lib/friendly'
 
 type Tone = 'neutral' | 'ok' | 'warn' | 'bad' | 'sea'
 const toneClass: Record<Tone, string> = {
@@ -58,4 +59,36 @@ export function Field({ label, ...rest }: React.InputHTMLAttributes<HTMLInputEle
       <input {...rest} className="h-12 w-full rounded-xl border border-line bg-card px-3 text-base" />
     </label>
   )
+}
+
+/** Scelta di un file con controllo immediato: se il formato o il peso non vanno, lo dice subito e spiega cosa fare. */
+export function FileField({ label, required, onFile }: { label: string; required?: boolean; onFile: (file: File | null) => void }) {
+  const [chosen, setChosen] = useState<File | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-ink-soft">{label}</span>
+      <input required={required} type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
+        onChange={(e) => {
+          const f = e.target.files?.[0] ?? null
+          const p = f ? fileProblem(f) : null
+          if (p) { e.target.value = ''; setChosen(null); setProblem(p); onFile(null) } else { setChosen(f); setProblem(null); onFile(f) }
+        }}
+        className="block w-full text-sm file:mr-3 file:h-11 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:text-sm file:font-semibold file:text-white" />
+      {chosen && <span className="mt-1 block text-xs text-ok">File pronto: {chosen.name} · {fileSize(chosen.size)}</span>}
+      {problem && <span role="alert" className="mt-1 block rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">{problem}</span>}
+    </label>
+  )
+}
+
+/** La piccola conferma che compare in basso dopo ogni salvataggio riuscito. */
+export function Toaster() {
+  const [text, setText] = useState<string | null>(null)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    const off = onSay((t) => { setText(t); clearTimeout(timer); timer = setTimeout(() => setText(null), 3500) })
+    return () => { off(); clearTimeout(timer) }
+  }, [])
+  if (!text) return null
+  return <div role="status" aria-live="polite" className="fixed inset-x-0 bottom-24 z-50 mx-auto w-fit max-w-[90vw] rounded-full bg-ok px-5 py-3 text-sm font-semibold text-white shadow-lg lg:bottom-8">✓ {text}</div>
 }

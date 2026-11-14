@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, Field } from '../components/ui'
 import { appliedAsLabel } from '../lib/labels'
+import { friendly } from '../lib/friendly'
 import { supabase } from '../lib/supabase'
 import type { AppliedAs } from '../lib/types'
 
@@ -76,7 +77,7 @@ export function Register({ onDone }: { onDone: () => void }) {
     const { error } = await supabase.rpc('register_me', {
       p_first_name: first, p_last_name: last, p_applied_as: as, p_phone: phone || null, p_language: 'it', p_privacy_consent: privacy,
     })
-    if (error) { setError(error.message); setBusy(false) } else onDone()
+    if (error) { setError(friendly(error, 'registrarti')); setBusy(false) } else onDone()
   }
   const phoneDigits = phone.replace(/\D/g, '').length
   const phoneBad = phone.trim() !== '' && (phoneDigits < 8 || phoneDigits > 15)

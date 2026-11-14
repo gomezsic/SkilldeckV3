@@ -4,6 +4,8 @@ import { loadDeck } from './lib/deck'
 import { demoDecks } from './lib/demo'
 import { envLabel, supabase } from './lib/supabase'
 import type { Deck } from './lib/types'
+import { canLeave, friendly } from './lib/friendly'
+import { Toaster } from './components/ui'
 import { Register, SignIn } from './screens/Access'
 import AdminShell from './screens/AdminShell'
 import MyDeck from './screens/MyDeck'
@@ -40,7 +42,7 @@ export default function App() {
   const refresh = useCallback(() => {
     if (demo) return
     setError(null)
-    loadDeck().then(setDeck).catch((e) => setError(e?.message ?? 'Errore di caricamento'))
+    loadDeck().then(setDeck).catch((e) => setError(friendly(e, 'leggere i tuoi dati')))
   }, [demo])
   useEffect(() => { if (session) refresh(); else if (session === null && !demo) setDeck(undefined) }, [session, refresh, demo])
 
@@ -67,12 +69,13 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-full max-w-md flex-col lg:max-w-none lg:flex-row">
+      <Toaster />
       {/* Desktop: menu di lato */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-card px-4 py-6 lg:flex">
         <span className="px-3"><span className="flex items-center gap-2 text-sm font-semibold tracking-tight text-ink"><img src="/logo-mark.png" alt="" width="32" height="32" className="h-8 w-8" />SkillDeck Pro</span></span>
         <nav aria-label="Sezioni" className="mt-6 flex-1 space-y-1">
           {tabs.map((t) => (
-            <button key={t.id} type="button" onClick={() => setTab(t.id)} aria-current={tab === t.id ? 'page' : undefined}
+            <button key={t.id} type="button" onClick={() => { if (canLeave()) setTab(t.id) }} aria-current={tab === t.id ? 'page' : undefined}
               className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium ${tab === t.id ? 'bg-ink text-white' : 'text-ink-soft hover:bg-sand'}`}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={t.icon} /></svg>
               {t.label}
@@ -117,7 +120,7 @@ export default function App() {
         <ul className="mx-auto grid max-w-md grid-cols-4">
           {tabs.map((t) => (
             <li key={t.id}>
-              <button type="button" onClick={() => setTab(t.id)} aria-current={tab === t.id ? 'page' : undefined}
+              <button type="button" onClick={() => { if (canLeave()) setTab(t.id) }} aria-current={tab === t.id ? 'page' : undefined}
                 className={`flex h-16 w-full flex-col items-center justify-center gap-1 text-xs font-medium ${tab === t.id ? 'text-ink' : 'text-ink-soft'}`}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === t.id ? 2.2 : 1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={t.icon} /></svg>
                 {t.label}

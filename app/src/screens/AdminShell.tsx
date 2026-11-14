@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { demoDecks } from '../lib/demo'
+import { canLeave } from '../lib/friendly'
+import { Toaster } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import ControlRoom from './ControlRoom'
 import People from './People'
@@ -26,11 +28,12 @@ const areas: Area[] = [
 export default function AdminShell({ demo, badge }: { demo: boolean; badge: string }) {
   const [area, setArea] = useState<AreaId>('regia')
   const [openPerson, setOpenPerson] = useState<string | null>(null)
-  const go = (a: AreaId) => { setArea(a); setOpenPerson(null) }
+  const go = (a: AreaId) => { if (!canLeave()) return; setArea(a); setOpenPerson(null) }
   const current = areas.find((a) => a.id === area)
 
   return (
     <div className="flex min-h-full flex-col lg:flex-row">
+      <Toaster />
       <aside className="flex shrink-0 flex-col border-b border-line bg-ink text-white lg:w-64 lg:border-b-0">
         <div className="flex items-center justify-between px-5 py-4">
           <span className="flex items-center gap-2 text-sm font-semibold"><span className="grid h-8 w-8 place-items-center rounded-lg bg-white"><img src="/logo-mark.png" alt="" className="h-7 w-7" /></span>SkillDeck Pro</span>

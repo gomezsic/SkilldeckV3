@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Button } from '../components/ui'
+import { Button, FileField } from '../components/ui'
+import { friendly, say, useUnsaved } from '../lib/friendly'
 
 export interface FieldSpec {
   name: string; label: string
@@ -10,7 +11,9 @@ export interface FieldSpec {
 type Values = Record<string, string | boolean>
 
 /** Un piccolo modulo che si apre da un pulsante: pochi campi, un solo "Salva". */
-export function MiniForm({ open: label, submit = 'Salva', fields, onSave, startOpen = false, small = false, warn }: {
+export function MiniForm({ open: label, submit = 'Salva', fields, onSave, startOpen = false, small = false, warn, done = 'Salvato' }: {
+  /** done: la conferma mostrata quando il salvataggio riesce. */
+  done?: string
   open: string; submit?: string; fields: FieldSpec[]; startOpen?: boolean
   /** small: si apre da una scritta cliccabile invece che da un pulsante (per le righe di un elenco). */
   small?: boolean
@@ -23,17 +26,20 @@ export function MiniForm({ open: label, submit = 'Salva', fields, onSave, startO
   const [values, setValues] = useState<Values>(initial)
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null)
+  const [leaving, setLeaving] = useState(false)
+  const changed = open && (file !== null || JSON.stringify(values) !== JSON.stringify(initial()))
+  useUnsaved(changed)
 
   if (!open) {
-    const start = () => { setValues(initial()); setOpen(true) }
+    const start = () => { setValues(initial()); setFile(null); setError(null); setLeaving(false); setOpen(true) }
     return small ? <button type="button" className="text-xs font-semibold text-sea" onClick={start}>{label}</button>
       : <Button variant="ghost" className="mt-3" onClick={start}>{label}</Button>
   }
   const warning = warn?.(values) ?? null
   const run = async () => {
     setBusy(true); setError(null)
-    try { await onSave(values, file); setOpen(false); setFile(null) }
-    catch (e) { setError(e instanceof Error ? e.message : (e as { message?: string })?.message ?? 'Salvataggio non riuscito') }
+    try { await onSave(values, file); setOpen(false); setFile(null); say(done) }
+    catch (e) { setError(friendly(e)) }
     finally { setBusy(false) }
   }
   const input = 'h-12 w-full rounded-xl border border-line bg-card px-3 text-base'
@@ -44,6 +50,8 @@ export function MiniForm({ open: label, submit = 'Salva', fields, onSave, startO
           <input type="checkbox" className="mt-0.5 h-5 w-5" checked={!!values[f.name]} onChange={(e) => setValues({ ...values, [f.name]: e.target.checked })} />
           <span>{f.label}</span>
         </label>
+      ) : f.type === 'file' ? (
+        <FileField key={f.name} label={f.label} required={f.required} onFile={setFile} />
       ) : (
         <label key={f.name} className="block">
           <span className="mb-1 block text-sm font-medium text-ink-soft">{f.label}</span>
@@ -52,9 +60,6 @@ export function MiniForm({ open: label, submit = 'Salva', fields, onSave, startO
               <option value="" disabled>Scegli…</option>
               {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-          ) : f.type === 'file' ? (
-            <input required={f.required} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm file:mr-3 file:h-11 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:text-sm file:font-semibold file:text-white" />
           ) : (
             <input required={f.required} type={f.type ?? 'text'} inputMode={f.type === 'number' ? 'decimal' : undefined} min={f.type === 'number' ? 0 : undefined} step={f.type === 'number' ? 'any' : undefined}
               {...(f.type === 'date' ? { min: f.min, max: f.max } : {})}
@@ -65,7 +70,15 @@ export function MiniForm({ open: label, submit = 'Salva', fields, onSave, startO
       {warning && <p role="status" className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">{warning}</p>}
       {error && <p role="alert" className="text-sm text-bad">{error}</p>}
       <Button type="submit" disabled={busy}>{busy ? 'Salvo…' : submit}</Button>
-      <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Annulla</Button>
+      {leaving ? (
+        <div className="rounded-lg bg-warn-soft p-3 text-sm text-warn">
+          <p>Hai scritto dei dati che non hai salvato. Se chiudi vanno persi.</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Button type="button" variant="ghost" onClick={() => setLeaving(false)}>Resto qui</Button>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Chiudi senza salvare</Button>
+          </div>
+        </div>
+      ) : <Button type="button" variant="ghost" onClick={() => (changed ? setLeaving(true) : setOpen(false))}>Annulla</Button>}
     </form>
   )
 }
@@ -90,7 +103,7 @@ export function ConfirmLink({ label, question, yes, onConfirm }: { label: string
   return (
     <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
       <span className="text-ink-soft">{error ?? question}</span>
-      <button type="button" disabled={busy} className="font-semibold text-bad" onClick={() => { setBusy(true); onConfirm().then(() => setAsking(false)).catch((e) => setError(e?.message ?? 'Non riuscito')).finally(() => setBusy(false)) }}>{busy ? 'Un attimo…' : yes}</button>
+      <button type="button" disabled={busy} className="font-semibold text-bad" onClick={() => { setBusy(true); onConfirm().then(() => setAsking(false)).catch((e) => setError(friendly(e, 'completare l\'operazione'))).finally(() => setBusy(false)) }}>{busy ? 'Un attimo…' : yes}</button>
       <button type="button" className="font-semibold text-ink-soft" onClick={() => { setAsking(false); setError(null) }}>No</button>
     </span>
   )

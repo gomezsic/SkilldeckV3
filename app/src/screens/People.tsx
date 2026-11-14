@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Chip } from '../components/ui'
 import { appliedAsLabel, statusLabel } from '../lib/labels'
+import { friendly } from '../lib/friendly'
 import { supabase } from '../lib/supabase'
 import type { PersonStatus } from '../lib/types'
 
@@ -29,7 +30,7 @@ export default function People({ onOpen }: { onOpen: (personId: string) => void 
       const term = text.trim().replace(/[,()%*\\]/g, ' ').trim()
       if (term) q = q.or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`)
       const { data, error, count } = await q
-      if (error) setError(error.message); else { setError(null); setRows(data as Row[]); setTotal(count ?? 0) }
+      if (error) setError(friendly(error, 'leggere l\'elenco')); else { setError(null); setRows(data as Row[]); setTotal(count ?? 0) }
     }, 250)
     return () => clearTimeout(t)
   }, [text, status, archived])

@@ -5,6 +5,7 @@ import { capabilityLabel, statusLabel, stepLabel, stepStatusLabel } from '../lib
 import { supabase } from '../lib/supabase'
 import type { Deck, Step } from '../lib/types'
 import MyDeck from './MyDeck'
+import { canLeave, friendly } from '../lib/friendly'
 import { ConfirmLink } from './DeckForms'
 
 const goalsByFamily: Record<string, string[]> = {
@@ -26,13 +27,13 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
   const [ask, setAsk] = useState<null | { title: string; run: (reason: string) => PromiseLike<{ error: { message: string } | null }> }>(null)
   const [reason, setReason] = useState('')
 
-  const reload = useCallback(() => loadDeck(personId).then(setDeck).catch((e) => setMsg({ text: e?.message ?? 'Errore', bad: true })), [personId])
+  const reload = useCallback(() => loadDeck(personId).then(setDeck).catch((e) => setMsg({ text: friendly(e, 'leggere la scheda'), bad: true })), [personId])
   useEffect(() => { void reload() }, [reload])
 
   const run = async (label: string, call: PromiseLike<{ error: { message: string } | null }>) => {
     setBusy(true); setMsg(null)
     const { error } = await call
-    setMsg(error ? { text: error.message, bad: true } : { text: label })
+    setMsg(error ? { text: friendly(error, 'completare l\'operazione'), bad: true } : { text: label })
     await reload(); setBusy(false)
   }
 
@@ -47,7 +48,7 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
 
   return (
     <div className="space-y-3">
-      <button type="button" onClick={onBack} className="text-sm font-medium text-sea">‹ Indietro</button>
+      <button type="button" onClick={() => { if (canLeave()) onBack() }} className="text-sm font-medium text-sea">‹ Indietro</button>
 
       <section className="rounded-2xl border border-line bg-card p-4">
         <div className="flex items-center justify-between gap-3">
