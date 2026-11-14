@@ -5,6 +5,7 @@ import {
 } from '../lib/application'
 import { friendly, say } from '../lib/friendly'
 import { supabase } from '../lib/supabase'
+import { addNote } from './PersonNotes'
 
 const input = 'h-11 w-full rounded-xl border border-line bg-card px-3 text-base'
 const statusText: Record<string, string> = { pending: 'Da fissare', scheduled: 'Fissato', completed: 'Fatto', cancelled: 'Annullato' }
@@ -90,16 +91,16 @@ export default function CandidacyPanel({ personId, onChanged }: { personId: stri
           )}
           {iv.status === 'scheduled' && !planning && (
             <div className="mt-3 space-y-2">
-              <label className="block"><span className="mb-1 block text-sm font-medium text-ink-soft">Note sul colloquio (restano solo a te)</span>
+              <label className="block"><span className="mb-1 block text-sm font-medium text-ink-soft">Note sul colloquio (restano nel suo profilo, le leggi solo tu)</span>
                 <textarea rows={2} className="w-full rounded-xl border border-line bg-card p-3 text-base" value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
-              <Button disabled={busy} onClick={() => void run('Colloquio segnato come fatto', supabase.rpc('cmd_complete_interview', { p_request: iv.id, p_notes: notes || null }))}>Segna il colloquio come fatto</Button>
+              <Button disabled={busy} onClick={() => { const n = notes.trim(); void run('Colloquio segnato come fatto', supabase.rpc('cmd_complete_interview', { p_request: iv.id, p_notes: n || null }).then(async (r) => { if (!r.error && n) await addNote(personId, 'interview', n).catch(() => undefined); return r })) }}>Segna il colloquio come fatto</Button>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="ghost" disabled={busy} onClick={() => setPlanning(true)}>Sposta</Button>
                 <Button variant="ghost" disabled={busy} onClick={() => { if (window.confirm('Annullare il colloquio fissato? La richiesta torna tra quelle da fissare.')) void run('Colloquio annullato', supabase.rpc('cmd_cancel_interview', { p_request: iv.id, p_reason: notes || null })) }}>Annulla il colloquio</Button>
               </div>
             </div>
           )}
-          {iv.status === 'completed' && <p className="mt-2 text-sm text-ink-soft">Ora puoi accettare o non accettare la candidatura con i comandi qui sopra.</p>}
+          {iv.status === 'completed' && <p className="mt-2 text-sm text-ink-soft">Ora puoi accettare o non accettare la candidatura con i comandi in alto, scrivendo la nota sulla decisione.</p>}
         </div>
       )}
 

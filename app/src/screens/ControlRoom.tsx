@@ -7,7 +7,7 @@ import { fmtSlot, trackLabel } from '../lib/application'
 import InterviewSettings from './InterviewSettings'
 
 interface Item { id: string; personId?: string; name: string; detail: string; since: string | null }
-interface Board { interviews: Item[]; registered: Item[]; inPath: Item[]; readyQueue: Item[]; titles: Item[]; expiring: Item[]; counts: Record<string, number> }
+interface Board { memos: Item[]; interviews: Item[]; registered: Item[]; inPath: Item[]; readyQueue: Item[]; titles: Item[]; expiring: Item[]; counts: Record<string, number> }
 const EXPIRY_DAYS = 60
 const kindLabel: Record<string, string> = { title: 'Titolo', identity_document: 'Documento', insurance: 'Assicurazione' }
 const WAIT_FLAG_DAYS = 7
@@ -17,7 +17,7 @@ const fullName = (p: any) => (p ? `${p.first_name} ${p.last_name}` : 'Persona')
 
 /** Sala di controllo del primo tempo: quattro riquadri, ognuno risponde a "chi aspetta me?". */
 async function loadBoard(): Promise<Board> {
-  const [reg, plans, queue, titles, exp, people, ivs] = await Promise.all([
+  const [reg, plans, queue, titles, exp, people, ivs, memos] = await Promise.all([
     supabase.from('person').select('id, first_name, last_name, applied_as, created_at').eq('status', 'registered').neq('family', 'admin').is('archived_at', null).order('created_at'),
     supabase.from('path_plan').select('id, goal_capability, assigned_at, person:person!path_plan_person_id_fkey!inner(id, first_name, last_name, status), path_step(kind, position, status)').eq('status', 'active').eq('person.status', 'in_path').is('person.archived_at', null).order('assigned_at'),
     supabase.from('ready_queue').select('plan_id, person_id, goal_capability, ready_since').order('ready_since'),
@@ -25,8 +25,9 @@ async function loadBoard(): Promise<Board> {
     supabase.rpc('expiring', { p_days: EXPIRY_DAYS }),
     supabase.from('person').select('id, first_name, last_name, status').neq('family', 'admin').is('archived_at', null),
     supabase.from('interview_request').select('id, person_id, status, preferred_slots, scheduled_start, created_at').in('status', ['pending', 'scheduled', 'completed']).order('created_at', { ascending: false }),
+    supabase.from('person_note').select('id, person_id, body, due_on, created_at').eq('kind', 'memo').is('done_at', null).order('due_on', { nullsFirst: false }),
   ])
-  for (const r of [reg, plans, queue, titles, exp, people, ivs]) if (r.error) throw r.error
+  for (const r of [reg, plans, queue, titles, exp, people, ivs, memos]) if (r.error) throw r.error
   const interviewOf = new Map<string, any>()
   for (const i of ivs.data ?? []) if (!interviewOf.has(i.person_id)) interviewOf.set(i.person_id, i)
   const interviewText = (i: any) => !i ? 'senza richiesta di colloquio'
@@ -45,7 +46,9 @@ async function loadBoard(): Promise<Board> {
     for (const p of data ?? []) names.set(p.id, fullName(p))
   }
 
+  const todayIso = new Date().toISOString().slice(0, 10)
   return {
+    memos: (memos.data ?? []).filter((m: any) => allNames.has(m.person_id)).map((m: any) => ({ id: m.id, personId: m.person_id, name: allNames.get(m.person_id) ?? 'Persona', detail: `${m.due_on && m.due_on < todayIso ? 'In ritardo · ' : ''}${m.body}`, since: m.due_on })),
     registered: (reg.data ?? []).map((p: any) => ({ id: p.id, personId: p.id, name: fullName(p), detail: `${trackLabel[p.applied_as] ?? appliedAsLabel[p.applied_as] ?? 'Candidatura'} · ${interviewText(interviewOf.get(p.id))}`, since: p.created_at })),
     interviews: (ivs.data ?? []).filter((i: any) => i.status === 'scheduled' && allNames.has(i.person_id)).sort((a: any, b: any) => a.scheduled_start.localeCompare(b.scheduled_start))
       .map((i: any) => ({ id: i.id, personId: i.person_id, name: allNames.get(i.person_id) ?? 'Persona', detail: fmtSlot(i.scheduled_start), since: null })),
@@ -61,6 +64,7 @@ async function loadBoard(): Promise<Board> {
 }
 
 export const demoBoard: Board = {
+  memos: [{ id: 'm1', name: 'Elena Prova', detail: 'Mandarle il link della Career e il programma', since: new Date(Date.now() + 2 * 86_400_000).toISOString() }],
   interviews: [{ id: 'i1', name: 'Luca Finto', detail: 'giovedì 19 novembre, ore 17:30', since: null }],
   registered: [
     { id: 'r1', name: 'Elena Prova', detail: 'Skipper · colloquio da fissare · 3 date proposte', since: new Date(Date.now() - 2 * 86_400_000).toISOString() },
@@ -101,6 +105,7 @@ export default function ControlRoom({ demo, onOpen: setOpenPerson }: { demo: boo
       <div className="mt-4 grid gap-3 xl:grid-cols-2">
         <Tile title="Nuove candidature" hint="In attesa di colloquio o della tua decisione" empty="Nessuna nuova candidatura." items={board.registered} flagAfter={WAIT_FLAG_DAYS} onOpen={setOpenPerson} />
         <Tile title="Colloqui in calendario" hint="Già fissati, dal più vicino" empty="Nessun colloquio fissato." items={board.interviews} tone="ok" onOpen={setOpenPerson} />
+        <Tile title="Promemoria" hint="Cose da fare o da inviare, dalla più urgente" empty="Nessun promemoria aperto." items={board.memos} onOpen={setOpenPerson} />
         <Tile title="Pronti per Ready" hint="Percorso completato, manca la tua conferma" empty="Nessuno in coda." items={board.readyQueue} flagAfter={WAIT_FLAG_DAYS} tone="ok" onOpen={setOpenPerson} />
         <Tile title="In percorso" hint="Con il passo aperto" empty="Nessuno in percorso." items={board.inPath} onOpen={setOpenPerson} />
         <Tile title={`Scadenze entro ${EXPIRY_DAYS} giorni`} hint="Titoli, documenti e assicurazioni, compresi quelli già scaduti" empty="Nessuna scadenza in arrivo." items={board.expiring} onOpen={setOpenPerson} />

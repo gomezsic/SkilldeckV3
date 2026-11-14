@@ -8,6 +8,7 @@ import MyDeck from './MyDeck'
 import { canLeave, friendly } from '../lib/friendly'
 import { ConfirmLink } from './DeckForms'
 import CandidacyPanel from './CandidacyPanel'
+import PersonNotes, { addNote } from './PersonNotes'
 
 const goalsByFamily: Record<string, string[]> = {
   skipper: ['skipper_fleet', 'skipper_charter', 'co_skipper'],
@@ -27,6 +28,13 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
   const [template, setTemplate] = useState<(typeof templates)[number]['id']>('full')
   const [ask, setAsk] = useState<null | { title: string; run: (reason: string) => PromiseLike<{ error: { message: string } | null }> }>(null)
   const [reason, setReason] = useState('')
+  const [decision, setDecision] = useState('')
+  const [noteVersion, setNoteVersion] = useState(0)
+  /** Dopo un comando riuscito scrive la nota nel diario della persona. */
+  const noted = (kind: 'decision' | 'interview', text: string) => async (r: { error: { message: string } | null }) => {
+    if (!r.error && text.trim()) { try { await addNote(personId, kind, text) } catch (e) { return { error: { message: friendly(e, 'salvare la nota') } } } finally { setNoteVersion((v) => v + 1) } }
+    return r
+  }
 
   const reload = useCallback(() => loadDeck(personId).then(setDeck).catch((e) => setMsg({ text: friendly(e, 'leggere la scheda'), bad: true })), [personId])
   useEffect(() => { void reload() }, [reload])
@@ -84,8 +92,11 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
                 {templates.map((t) => <Pick key={t.id} on={template === t.id} onClick={() => setTemplate(t.id)}>{t.label} · {t.hint}</Pick>)}
               </div>
             </fieldset>
-            <Button disabled={busy || !chosenGoal} onClick={() => void run('Candidatura accettata: ora è In percorso.', supabase.rpc('cmd_accept_application', { p_person: person.id, p_goal: chosenGoal, p_template: template }))}>Accetta la candidatura</Button>
-            <Button variant="ghost" disabled={busy} onClick={() => setAsk({ title: 'Motivo (resta solo a te)', run: (r) => supabase.rpc('cmd_reject_application', { p_person: person.id, p_reason: r }) })}>Non accettare</Button>
+            <label className="block text-sm font-medium text-ink-soft">Nota sulla decisione (resta nel suo profilo, la leggi solo tu)
+              <textarea value={decision} onChange={(e) => setDecision(e.target.value)} rows={3} placeholder="Com'è andato il colloquio e perché accetti o non accetti" className="mt-1 w-full rounded-xl border border-line bg-card p-3 text-base font-normal text-ink" />
+            </label>
+            <Button disabled={busy || !chosenGoal} onClick={() => { const d = decision; setDecision(''); void run('Candidatura accettata: ora è In percorso.', supabase.rpc('cmd_accept_application', { p_person: person.id, p_goal: chosenGoal, p_template: template }).then(noted('decision', d ? `Candidatura accettata. ${d}` : 'Candidatura accettata.'))) }}>Accetta la candidatura</Button>
+            <Button variant="ghost" disabled={busy || !decision.trim()} onClick={() => { const d = decision; setDecision(''); void run('Candidatura non accettata: la nota è nel suo profilo.', supabase.rpc('cmd_reject_application', { p_person: person.id, p_reason: d }).then(noted('decision', `Candidatura non accettata. ${d}`))) }}>{decision.trim() ? 'Non accettare' : 'Non accettare · scrivi prima la nota'}</Button>
           </div>
         )}
 
@@ -119,7 +130,9 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
         )}
       </section>
 
-      <CandidacyPanel personId={person.id} onChanged={() => void reload()} />
+      <PersonNotes personId={person.id} firstName={person.first_name} email={person.email} phone={person.phone} version={noteVersion} />
+
+      <CandidacyPanel personId={person.id} onChanged={() => { setNoteVersion((v) => v + 1); void reload() }} />
 
       <p className="px-1 text-xs font-semibold tracking-wide text-ink-soft uppercase">Il suo My Deck · puoi compilarlo tu al posto suo</p>
       <MyDeck deck={deck} readOnly={false} admin onChanged={() => void reload()} />
