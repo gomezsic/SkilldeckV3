@@ -18,6 +18,7 @@ export interface Person {
   applied_as: AppliedAs | null
   archived_at?: string | null
   gender?: string | null; address?: string | null; city?: string | null; mother_tongue?: string | null
+  photo_file_id?: string | null
 }
 export interface Capability { capability: string; status: 'active' | 'pending' | 'revoked' }
 export interface Step { id?: string; kind: StepKind; position: number; status: StepStatus; done_at: string | null }
@@ -29,15 +30,19 @@ export interface Title {
   title_id?: string; issuer?: string | null; issued_on?: string | null; group_label?: string | null
 }
 export interface Compliance { requirement: Requirement; covered: boolean; covered_until: string | null; by_title: string | null }
-export interface IdentityDoc { id: string; kind: string; expires_on: string | null; file_path?: string | null; number?: string | null; archived_at?: string | null }
-export interface Insurance { id: string; kind: string; company: string | null; expires_on: string | null; file_path?: string | null; policy_number?: string | null; archived_at?: string | null }
+export interface IdentityDoc { id: string; kind: string; expires_on: string | null; file_path?: string | null; number?: string | null; archived_at?: string | null; issuer?: string | null; issued_on?: string | null }
+export interface Insurance { id: string; kind: string; company: string | null; expires_on: string | null; file_path?: string | null; policy_number?: string | null; archived_at?: string | null; issued_on?: string | null }
 export interface Skill { id?: string; kind: 'language' | 'technical' | 'area' | 'boat_type' | 'soft' | 'hobby' | 'sport'; value: string; level: string | null }
 export interface LogEntry {
   id: string; from_date: string; to_date: string; route: string | null
   miles: number | null; days: number | null; nights: number | null; source: 'declared' | 'imported' | 'generated'
   role_on_board?: string | null; boat_name?: string | null; boat_type?: string | null
+  boat_model?: string | null; loa_m?: number | null; propulsion?: 'sail' | 'power' | null; night_hours?: number | null; night_miles?: number | null; is_tidal?: boolean; role_label?: string | null; notes?: string | null
 }
-export interface TaxProfile { tax_code: string | null; tax_regime: string | null; vat_number: string | null; iban: string | null; account_holder?: string | null }
+export interface TaxProfile { tax_code: string | null; tax_regime: string | null; vat_number: string | null; iban: string | null; account_holder?: string | null
+  birth_place?: string | null; no_tax_code?: boolean; company_name?: string | null; pec?: string | null; sdi_code?: string | null; billing_same?: boolean
+  billing_address?: { address?: string; zip?: string; city?: string; province?: string; country?: string } | null }
+export interface Letter { id: string; title: string; issuer: string | null; issued_on: string | null; file_path: string | null; archived_at: string | null }
 export interface Preferences { privacy_consent_at: string | null; marketing_opt_out: boolean; showcase_consent: boolean }
 
 export interface Deck {
@@ -53,6 +58,8 @@ export interface Deck {
   tax: TaxProfile | null
   preferences: Preferences | null
   profile?: Profile | null
+  letters?: Letter[]
+  photo_path?: string | null
 }
 
 export interface Profile { description: string | null; objective: string | null; smoker: boolean | null; engagement_types: string[]; sought_roles: string[]; availability: string[]; tax_positions: string[]; min_daily_rate: number | null }
