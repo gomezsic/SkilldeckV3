@@ -6,6 +6,8 @@ import {
 import { friendly, say } from '../lib/friendly'
 import { supabase } from '../lib/supabase'
 import { addNote } from './PersonNotes'
+import { MiniForm, str } from './DeckForms'
+import { EXPERIENCE } from '../lib/application'
 
 const input = 'h-11 w-full rounded-xl border border-line bg-card px-3 text-base'
 const statusText: Record<string, string> = { pending: 'Da fissare', scheduled: 'Fissato', completed: 'Fatto', cancelled: 'Annullato' }
@@ -122,6 +124,22 @@ export default function CandidacyPanel({ personId, onChanged }: { personId: stri
           </div>
         </div>
       )}
+      {c && <MiniForm small open="Modifica le risposte della candidatura" done="Risposte della candidatura corrette" fields={[
+        { name: 'experience_years', label: 'Anni di esperienza', type: 'select', initial: c.experience_years ?? '', options: [...new Set([...(c.experience_years ? [c.experience_years] : []), ...EXPERIENCE])].map((x) => ({ value: x, label: x })) },
+        { name: 'experience_contexts', label: 'Dove ha maturato esperienza (voci separate da virgola)', initial: c.experience_contexts.join(', ') },
+        { name: 'boat_types', label: 'Tipi di barca (voci separate da virgola)', initial: c.boat_types.join(', ') },
+        { name: 'cooking_level', label: 'Cucina: livello', type: 'select', initial: c.cooking_level ?? '', options: Object.entries(COOKING).map(([value, label]) => ({ value, label })) },
+        { name: 'cooking_type', label: 'Cucina: tipo', initial: c.cooking_type ?? '' },
+        { name: 'about_me', label: 'Raccontaci di te', type: 'textarea', required: true, initial: c.about_me },
+      ]} onSave={async (v) => {
+        const split = (x: string | boolean | undefined) => (str(x) ?? '').split(',').map((y) => y.trim()).filter(Boolean)
+        const about = str(v.about_me)
+        if (!about) throw new Error('Il testo "Raccontaci di te" non può restare vuoto.')
+        if (about.length > 2000) throw new Error(`Il testo "Raccontaci di te" è troppo lungo: ${about.length} caratteri su 2.000.`)
+        const { error } = await supabase.from('candidacy').update({ experience_years: str(v.experience_years), experience_contexts: split(v.experience_contexts), boat_types: split(v.boat_types), cooking_level: str(v.cooking_level), cooking_type: str(v.cooking_type), about_me: about }).eq('person_id', personId)
+        if (error) throw error
+        await reload()
+      }} />}
       <p className="mt-2 text-xs text-ink-soft">Lingue e certificazioni dichiarate sono qui sotto, nel suo My Deck.</p>
     </section>
   )

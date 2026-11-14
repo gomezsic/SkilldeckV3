@@ -2,10 +2,11 @@ import type { Session } from '@supabase/supabase-js'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Field } from '../components/ui'
 import {
-  type ApplicationData, type Options, type Track, BOATS, CONTACT, CONTEXTS, COOKING, DEFAULT_SETTINGS, EXPERIENCE, LANGUAGES, MAX_LANGUAGES, PREFIXES,
+  type ApplicationData, type Options, type Track, BOATS, CONTACT, CONTEXTS as CONTEXTS_BASE, COOKING, DEFAULT_SETTINGS, EXPERIENCE as EXPERIENCE_BASE, LANGUAGES as LANGUAGES_BASE, MAX_LANGUAGES, PREFIXES,
   SKILL_GROUPS, SKILL_LEVELS, emptyApplication, fmtSlot, fmtSlotTime, freeSlots, loadOptions, passwordProblem, problems, readDraft, saveDraft,
   submitApplication, toPayload,
 } from '../lib/application'
+import { type Option, loadLists, pick } from '../lib/lists'
 import { friendly, useUnsaved } from '../lib/friendly'
 import { supabase } from '../lib/supabase'
 
@@ -43,6 +44,11 @@ export default function Application({ session, kind, firstError, onDone }: { ses
     return fits ? { ...emptyApplication(d.track), ...d, privacy: false } : emptyApplication(kind === 'crew' ? 'crew' : 'skipper')
   })
   const [touched, setTouched] = useState(false)
+  // Gli elenchi sono quelli che l'amministratore modifica in Impostazioni; se non si riescono a leggere restano quelli di base.
+  const [lists, setLists] = useState<Option[]>([])
+  useEffect(() => { loadLists().then(setLists).catch(() => setLists([])) }, [])
+  const fromList = (list: string, base: string[]) => { const l = pick(lists, list).map((o) => o.label); return l.length ? l : base }
+  const LANGUAGES = fromList('language', LANGUAGES_BASE), EXPERIENCE = fromList('experience_years', EXPERIENCE_BASE), CONTEXTS = fromList('experience_context', CONTEXTS_BASE)
   const [email, setEmail] = useState(''); const [email2, setEmail2] = useState('')
   const [pw, setPw] = useState(''); const [pw2, setPw2] = useState('')
   const [options, setOptions] = useState<Options | null>(null)

@@ -4,7 +4,7 @@ import { friendly, say, useUnsaved } from '../lib/friendly'
 
 export interface FieldSpec {
   name: string; label: string
-  type?: 'text' | 'date' | 'number' | 'select' | 'file' | 'checkbox'
+  type?: 'text' | 'date' | 'number' | 'select' | 'file' | 'checkbox' | 'textarea'
   required?: boolean; options?: { value: string; label: string }[]; placeholder?: string; initial?: string | boolean
   min?: string; max?: string
 }
@@ -60,6 +60,8 @@ export function MiniForm({ open: label, submit = 'Salva', fields, onSave, startO
               <option value="" disabled>Scegli…</option>
               {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+          ) : f.type === 'textarea' ? (
+            <textarea required={f.required} rows={5} placeholder={f.placeholder} value={String(values[f.name] ?? '')} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} className="w-full rounded-xl border border-line bg-card p-3 text-base" />
           ) : (
             <input required={f.required} type={f.type ?? 'text'} inputMode={f.type === 'number' ? 'decimal' : undefined} min={f.type === 'number' ? 0 : undefined} step={f.type === 'number' ? 'any' : undefined}
               {...(f.type === 'date' ? { min: f.min, max: f.max } : {})}
