@@ -22,7 +22,7 @@ export interface Step { id?: string; kind: StepKind; position: number; status: S
 export interface Plan { id: string; goal_capability: string; status: 'active' | 'completed' | 'closed'; steps: Step[] }
 export interface Title {
   id: string; code: string; name_it: string; status: TitleStatus
-  expires_on: string | null; has_file: boolean; rejection_reason: string | null
+  expires_on: string | null; has_file: boolean; rejection_reason: string | null; file_path?: string | null
 }
 export interface Compliance { requirement: Requirement; covered: boolean; covered_until: string | null; by_title: string | null }
 export interface IdentityDoc { id: string; kind: string; expires_on: string | null }

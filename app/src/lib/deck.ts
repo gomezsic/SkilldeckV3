@@ -19,7 +19,7 @@ export async function loadDeck(personId?: string): Promise<Deck | null> {
   const [caps, plans, titles, compliance, identity, insurance, skills, logbook, tax, prefs] = await Promise.all([
     supabase.from('person_capability').select('capability, status').eq('person_id', pid),
     supabase.from('path_plan').select('id, goal_capability, status, path_step(id, kind, position, status, done_at)').eq('person_id', pid).order('created_at'),
-    supabase.from('person_title').select('id, status, expires_on, file_id, rejection_reason, title_catalog(code, name_it)').eq('person_id', pid).neq('status', 'replaced'),
+    supabase.from('person_title').select('id, status, expires_on, file_id, rejection_reason, title_catalog(code, name_it), file(storage_path)').eq('person_id', pid).neq('status', 'replaced'),
     supabase.rpc('compliance', { p_person: pid }),
     supabase.from('identity_document').select('id, kind, expires_on').eq('person_id', pid),
     supabase.from('insurance').select('id, kind, company, expires_on').eq('person_id', pid),
@@ -41,7 +41,7 @@ export async function loadDeck(personId?: string): Promise<Deck | null> {
     })),
     titles: (titles.data ?? []).map((t: any): Title => ({
       id: t.id, code: t.title_catalog?.code ?? '', name_it: t.title_catalog?.name_it ?? 'Titolo',
-      status: t.status, expires_on: t.expires_on, has_file: !!t.file_id, rejection_reason: t.rejection_reason,
+      status: t.status, expires_on: t.expires_on, has_file: !!t.file_id, rejection_reason: t.rejection_reason, file_path: t.file?.storage_path ?? null,
     })),
     compliance: compliance.data ?? [],
     identity: identity.data ?? [],
@@ -56,4 +56,36 @@ export async function loadDeck(personId?: string): Promise<Deck | null> {
 export async function savePersonalData(id: string, patch: Pick<Person, 'first_name' | 'last_name' | 'phone' | 'birth_date' | 'ui_language'>) {
   const { error } = await supabase.from('person').update(patch).eq('id', id)
   if (error) throw error
+}
+
+const BUCKET = 'documenti'
+export const MAX_FILE_BYTES = 10 * 1024 * 1024
+export const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+
+export async function listCatalog(): Promise<{ id: string; name_it: string }[]> {
+  const { data, error } = await supabase.from('title_catalog').select('id, name_it, category, command_level').eq('is_active', true).order('category').order('command_level')
+  if (error) throw error
+  return data ?? []
+}
+
+/** Carica il file nella cartella della persona, lo registra e dichiara il titolo. */
+export async function declareTitle(personId: string, input: { titleId: string; expiresOn: string | null; number: string | null; file: File }) {
+  const { file } = input
+  if (!ACCEPTED_TYPES.includes(file.type)) throw new Error('Formato non ammesso: usa PDF, JPG, PNG o WEBP.')
+  if (file.size > MAX_FILE_BYTES) throw new Error('Il file supera i 10 MB.')
+  const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const path = `${personId}/titoli/${crypto.randomUUID()}.${ext}`
+  const up = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false })
+  if (up.error) throw up.error
+  const f = await supabase.from('file').insert({ owner_person_id: personId, uploaded_by: personId, storage_path: path, mime_type: file.type, size_bytes: file.size, linked_table: 'person_title' }).select('id').single()
+  if (f.error) throw f.error
+  const t = await supabase.from('person_title').insert({ person_id: personId, title_id: input.titleId, status: 'declared', expires_on: input.expiresOn, number: input.number, file_id: f.data.id })
+  if (t.error) throw t.error
+}
+
+/** Indirizzo temporaneo (un minuto) per aprire un file privato. */
+export async function openFile(path: string) {
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60)
+  if (error) throw error
+  window.open(data.signedUrl, '_blank', 'noopener')
 }

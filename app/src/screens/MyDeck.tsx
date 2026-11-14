@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button, Chip, Empty, Field, Row, Section } from '../components/ui'
-import { savePersonalData } from '../lib/deck'
+import { declareTitle, listCatalog, openFile, savePersonalData } from '../lib/deck'
 import {
   appliedAsLabel, capabilityLabel, daysTo, fmtDate, identityKindLabel, requirementLabel,
   skillKindLabel, sourceLabel, statusLabel, stepLabel, stepStatusLabel, titleStatusLabel,
@@ -83,7 +83,7 @@ export default function MyDeck({ deck, readOnly, onChanged }: { deck: Deck; read
         tone={rejected.length ? 'bad' : expiring.length ? 'warn' : undefined}>
         {titles.length === 0 ? <Empty>Carica qui patente, SRC e First Aid: servono per essere in regola.</Empty>
           : <ul className="divide-y divide-line">{titles.map((t) => <TitleRow key={t.id} t={t} />)}</ul>}
-        <Soon>Aggiungi un titolo</Soon>
+        {readOnly ? null : <AddTitle personId={person.id} onChanged={onChanged} />}
       </Section>
 
       <Section title="Documenti e assicurazioni" summary={deck.identity.length + deck.insurance.length ? `${deck.identity.length + deck.insurance.length} caricati` : 'Nessun documento caricato'}>
@@ -182,6 +182,7 @@ function TitleRow({ t }: { t: Title }) {
         {ex.text}{!t.has_file ? ' · manca il file' : ''}
       </p>
       {t.status === 'rejected' && t.rejection_reason && <p className="mt-1 rounded-lg bg-bad-soft px-2.5 py-1.5 text-xs text-bad">{t.rejection_reason}</p>}
+      {t.file_path && <button type="button" className="mt-1 text-xs font-semibold text-sea" onClick={() => void openFile(t.file_path!).catch((e) => alertError(e))}>Apri il file</button>}
     </li>
   )
 }
@@ -235,6 +236,47 @@ function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnl
       {error && <p role="alert" className="text-sm text-bad">{error}</p>}
       <Button type="submit" disabled={busy}>{busy ? 'Salvo…' : 'Salva'}</Button>
       <Button type="button" variant="ghost" onClick={() => setEditing(false)}>Annulla</Button>
+    </form>
+  )
+}
+
+function alertError(e: unknown) { console.error(e) }
+
+function AddTitle({ personId, onChanged }: { personId: string; onChanged: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [catalog, setCatalog] = useState<{ id: string; name_it: string }[]>([])
+  const [titleId, setTitleId] = useState(''); const [expires, setExpires] = useState(''); const [number, setNumber] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null)
+  useEffect(() => { if (open && catalog.length === 0) listCatalog().then(setCatalog).catch((e) => setError(e?.message ?? 'Errore')) }, [open, catalog.length])
+
+  if (!open) return <Button variant="ghost" className="mt-3" onClick={() => setOpen(true)}>Aggiungi un titolo</Button>
+  const submit = async () => {
+    if (!file || !titleId) return
+    setBusy(true); setError(null)
+    try {
+      await declareTitle(personId, { titleId, expiresOn: expires || null, number: number.trim() || null, file })
+      setOpen(false); setFile(null); setTitleId(''); setExpires(''); setNumber(''); onChanged()
+    } catch (e) { setError(e instanceof Error ? e.message : 'Caricamento non riuscito') } finally { setBusy(false) }
+  }
+  return (
+    <form className="mt-3 space-y-3 rounded-xl bg-sand p-3" onSubmit={(e) => { e.preventDefault(); void submit() }}>
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-ink-soft">Quale titolo</span>
+        <select required value={titleId} onChange={(e) => setTitleId(e.target.value)} className="h-12 w-full rounded-xl border border-line bg-card px-3 text-base">
+          <option value="" disabled>Scegli…</option>
+          {catalog.map((c) => <option key={c.id} value={c.id}>{c.name_it}</option>)}
+        </select>
+      </label>
+      <Field label="Scadenza (lascia vuoto se non scade)" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
+      <Field label="Numero (facoltativo)" value={number} onChange={(e) => setNumber(e.target.value)} />
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-ink-soft">File del titolo: PDF o foto, massimo 10 MB</span>
+        <input required type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="block w-full text-sm file:mr-3 file:h-11 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:text-sm file:font-semibold file:text-white" />
+      </label>
+      {error && <p role="alert" className="text-sm text-bad">{error}</p>}
+      <Button type="submit" disabled={busy || !file || !titleId}>{busy ? 'Carico…' : 'Carica e dichiara'}</Button>
+      <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Annulla</Button>
     </form>
   )
 }
