@@ -14,6 +14,7 @@ const familyLabel: Record<string, string> = { skipper: 'Skipper', crew_staff: 'C
 export default function People({ onOpen }: { onOpen: (personId: string) => void }) {
   const [text, setText] = useState('')
   const [status, setStatus] = useState<PersonStatus | 'all'>('all')
+  const [archived, setArchived] = useState(false)
   const [rows, setRows] = useState<Row[] | null>(null)
   const [total, setTotal] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -23,6 +24,7 @@ export default function People({ onOpen }: { onOpen: (personId: string) => void 
       let q = supabase.from('person').select('id, first_name, last_name, email, status, family, applied_as', { count: 'exact' })
         .order('last_name').order('first_name').limit(PAGE)
       if (status !== 'all') q = q.eq('status', status)
+      q = archived ? q.not('archived_at', 'is', null) : q.is('archived_at', null)
       // Virgole e parentesi hanno un significato nel filtro: le tolgo dal testo cercato.
       const term = text.trim().replace(/[,()%*\\]/g, ' ').trim()
       if (term) q = q.or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`)
@@ -30,7 +32,7 @@ export default function People({ onOpen }: { onOpen: (personId: string) => void 
       if (error) setError(error.message); else { setError(null); setRows(data as Row[]); setTotal(count ?? 0) }
     }, 250)
     return () => clearTimeout(t)
-  }, [text, status])
+  }, [text, status, archived])
 
   return (
     <section className="mt-6 rounded-2xl border border-line bg-card p-4">
@@ -44,6 +46,8 @@ export default function People({ onOpen }: { onOpen: (personId: string) => void 
             {f === 'all' ? 'Tutti' : statusLabel[f]}
           </button>
         ))}
+        <button type="button" aria-pressed={archived} onClick={() => setArchived(!archived)}
+          className={`h-9 rounded-full border px-3 text-xs font-semibold ${archived ? 'border-ink bg-ink text-white' : 'border-line bg-card text-ink-soft'}`}>In archivio</button>
       </div>
       {error && <p role="alert" className="mt-3 text-sm text-bad">{error}</p>}
       {rows === null ? <p className="mt-3 text-sm text-ink-soft">Carico…</p>

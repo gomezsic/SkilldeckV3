@@ -16,6 +16,7 @@ export interface Person {
   family: 'skipper' | 'crew_staff' | 'owner' | 'admin'
   status: PersonStatus
   applied_as: AppliedAs | null
+  archived_at?: string | null
 }
 export interface Capability { capability: string; status: 'active' | 'pending' | 'revoked' }
 export interface Step { id?: string; kind: StepKind; position: number; status: StepStatus; done_at: string | null }
@@ -23,14 +24,16 @@ export interface Plan { id: string; goal_capability: string; status: 'active' | 
 export interface Title {
   id: string; code: string; name_it: string; status: TitleStatus
   expires_on: string | null; has_file: boolean; rejection_reason: string | null; file_path?: string | null
+  number?: string | null; archived_at?: string | null
 }
 export interface Compliance { requirement: Requirement; covered: boolean; covered_until: string | null; by_title: string | null }
-export interface IdentityDoc { id: string; kind: string; expires_on: string | null; file_path?: string | null }
-export interface Insurance { id: string; kind: string; company: string | null; expires_on: string | null; file_path?: string | null }
-export interface Skill { kind: 'language' | 'technical' | 'area' | 'boat_type'; value: string; level: string | null }
+export interface IdentityDoc { id: string; kind: string; expires_on: string | null; file_path?: string | null; number?: string | null; archived_at?: string | null }
+export interface Insurance { id: string; kind: string; company: string | null; expires_on: string | null; file_path?: string | null; policy_number?: string | null; archived_at?: string | null }
+export interface Skill { id?: string; kind: 'language' | 'technical' | 'area' | 'boat_type'; value: string; level: string | null }
 export interface LogEntry {
   id: string; from_date: string; to_date: string; route: string | null
   miles: number | null; days: number | null; nights: number | null; source: 'declared' | 'imported' | 'generated'
+  role_on_board?: string | null; boat_name?: string | null; boat_type?: string | null
 }
 export interface TaxProfile { tax_code: string | null; tax_regime: string | null; vat_number: string | null; iban: string | null; account_holder?: string | null }
 export interface Preferences { privacy_consent_at: string | null; marketing_opt_out: boolean; showcase_consent: boolean }

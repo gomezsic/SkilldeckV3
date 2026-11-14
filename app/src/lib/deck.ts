@@ -4,7 +4,7 @@ import type { Deck, Person, Plan, Title } from './types'
 /** Legge tutto ciò che serve a My Deck. Le regole di accesso stanno nel database: qui si legge solo ciò che è mio. */
 export async function loadDeck(personId?: string): Promise<Deck | null> {
   // Senza personId leggo la MIA scheda (l'amministratore vede tutte le righe: il filtro è obbligatorio).
-  let q = supabase.from('person').select('id, first_name, last_name, email, phone, birth_date, ui_language, family, status, applied_as')
+  let q = supabase.from('person').select('id, first_name, last_name, email, phone, birth_date, ui_language, family, status, applied_as, archived_at')
   if (personId) q = q.eq('id', personId)
   else {
     const { data: auth } = await supabase.auth.getUser()
@@ -19,12 +19,12 @@ export async function loadDeck(personId?: string): Promise<Deck | null> {
   const [caps, plans, titles, compliance, identity, insurance, skills, logbook, tax, prefs] = await Promise.all([
     supabase.from('person_capability').select('capability, status').eq('person_id', pid),
     supabase.from('path_plan').select('id, goal_capability, status, path_step(id, kind, position, status, done_at)').eq('person_id', pid).order('created_at'),
-    supabase.from('person_title').select('id, status, expires_on, file_id, rejection_reason, title_catalog(code, name_it), file(storage_path)').eq('person_id', pid).neq('status', 'replaced'),
+    supabase.from('person_title').select('id, status, expires_on, number, archived_at, file_id, rejection_reason, title_catalog(code, name_it), file(storage_path)').eq('person_id', pid).neq('status', 'replaced'),
     supabase.rpc('compliance', { p_person: pid }),
-    supabase.from('identity_document').select('id, kind, expires_on, file(storage_path)').eq('person_id', pid),
-    supabase.from('insurance').select('id, kind, company, expires_on, file(storage_path)').eq('person_id', pid),
-    supabase.from('person_skill').select('kind, value, level').eq('person_id', pid),
-    supabase.from('logbook_entry').select('id, from_date, to_date, route, miles, days, nights, source').eq('person_id', pid).order('from_date', { ascending: false }),
+    supabase.from('identity_document').select('id, kind, number, expires_on, archived_at, file(storage_path)').eq('person_id', pid),
+    supabase.from('insurance').select('id, kind, company, policy_number, expires_on, archived_at, file(storage_path)').eq('person_id', pid),
+    supabase.from('person_skill').select('id, kind, value, level').eq('person_id', pid),
+    supabase.from('logbook_entry').select('id, from_date, to_date, route, miles, days, nights, source, role_on_board, boat_name, boat_type').eq('person_id', pid).order('from_date', { ascending: false }),
     supabase.from('tax_profile').select('tax_code, tax_regime, vat_number, iban, account_holder').eq('person_id', pid).maybeSingle(),
     supabase.from('person_preferences').select('privacy_consent_at, marketing_opt_out, showcase_consent').eq('person_id', pid).maybeSingle(),
   ])
@@ -41,11 +41,11 @@ export async function loadDeck(personId?: string): Promise<Deck | null> {
     })),
     titles: (titles.data ?? []).map((t: any): Title => ({
       id: t.id, code: t.title_catalog?.code ?? '', name_it: t.title_catalog?.name_it ?? 'Titolo',
-      status: t.status, expires_on: t.expires_on, has_file: !!t.file_id, rejection_reason: t.rejection_reason, file_path: t.file?.storage_path ?? null,
+      status: t.status, expires_on: t.expires_on, has_file: !!t.file_id, rejection_reason: t.rejection_reason, file_path: t.file?.storage_path ?? null, number: t.number, archived_at: t.archived_at,
     })),
     compliance: compliance.data ?? [],
-    identity: (identity.data ?? []).map((d: any) => ({ id: d.id, kind: d.kind, expires_on: d.expires_on, file_path: d.file?.storage_path ?? null })),
-    insurance: (insurance.data ?? []).map((d: any) => ({ id: d.id, kind: d.kind, company: d.company, expires_on: d.expires_on, file_path: d.file?.storage_path ?? null })),
+    identity: (identity.data ?? []).map((d: any) => ({ id: d.id, kind: d.kind, number: d.number, expires_on: d.expires_on, archived_at: d.archived_at, file_path: d.file?.storage_path ?? null })),
+    insurance: (insurance.data ?? []).map((d: any) => ({ id: d.id, kind: d.kind, company: d.company, policy_number: d.policy_number, expires_on: d.expires_on, archived_at: d.archived_at, file_path: d.file?.storage_path ?? null })),
     skills: skills.data ?? [],
     logbook: logbook.data ?? [],
     tax: tax.data ?? null,
@@ -99,6 +99,22 @@ export async function saveOne(table: 'tax_profile' | 'person_preferences', perso
 }
 export async function removeSkill(personId: string, kind: string, value: string) {
   const { error } = await supabase.from('person_skill').delete().eq('person_id', personId).eq('kind', kind).eq('value', value)
+  if (error) throw error
+}
+
+/** Modifica una riga già esistente (le regole di chi può farlo stanno nel database). */
+export async function updateRow(table: 'person_title' | 'identity_document' | 'insurance' | 'logbook_entry', id: string, patch: Record<string, unknown>) {
+  const { error } = await supabase.from(table).update(patch).eq('id', id)
+  if (error) throw error
+}
+/** Solo amministratore: archivia (o ripristina) una persona, un titolo, un documento o un'assicurazione. Niente si perde. */
+export async function archiveRow(table: 'person' | 'person_title' | 'identity_document' | 'insurance', id: string, restore = false) {
+  const { error } = await supabase.rpc('cmd_archive_row', { p_table: table, p_id: id, p_restore: restore })
+  if (error) throw error
+}
+/** Solo amministratore: elimina davvero una competenza o una riga di logbook dichiarata. Il contenuto resta nel registro. */
+export async function deleteRow(table: 'person_skill' | 'logbook_entry', id: string) {
+  const { error } = await supabase.rpc('cmd_delete_row', { p_table: table, p_id: id })
   if (error) throw error
 }
 

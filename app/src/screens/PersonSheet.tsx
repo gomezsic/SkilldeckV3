@@ -5,6 +5,7 @@ import { capabilityLabel, statusLabel, stepLabel, stepStatusLabel } from '../lib
 import { supabase } from '../lib/supabase'
 import type { Deck, Step } from '../lib/types'
 import MyDeck from './MyDeck'
+import { ConfirmLink } from './DeckForms'
 
 const goalsByFamily: Record<string, string[]> = {
   skipper: ['skipper_fleet', 'skipper_charter', 'co_skipper'],
@@ -117,7 +118,22 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
       </section>
 
       <p className="px-1 text-xs font-semibold tracking-wide text-ink-soft uppercase">Il suo My Deck · puoi compilarlo tu al posto suo</p>
-      <MyDeck deck={deck} readOnly={false} onChanged={() => void reload()} />
+      <MyDeck deck={deck} readOnly={false} admin onChanged={() => void reload()} />
+
+      <section className="rounded-2xl border border-line bg-card p-4">
+        <h2 className="text-sm font-semibold text-ink-soft">Archivio</h2>
+        {person.archived_at ? (
+          <>
+            <p className="mt-1 text-sm">Questa persona è in archivio: non compare negli elenchi né nella cabina di regia. Tutti i suoi dati sono conservati.</p>
+            <Button variant="ghost" className="mt-3" disabled={busy} onClick={() => void run('Persona ripristinata.', supabase.rpc('cmd_archive_row', { p_table: 'person', p_id: person.id, p_restore: true }))}>Ripristina la persona</Button>
+          </>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-ink-soft">Per schede doppie o create per errore. La persona sparisce dagli elenchi ma niente viene cancellato, e si può ripristinare.</p>
+            <div className="mt-2"><ConfirmLink label="Archivia questa persona" question="La tolgo dagli elenchi?" yes="Sì, archivia" onConfirm={async () => { await run('Persona archiviata.', supabase.rpc('cmd_archive_row', { p_table: 'person', p_id: person.id })) }} /></div>
+          </>
+        )}
+      </section>
     </div>
   )
 }

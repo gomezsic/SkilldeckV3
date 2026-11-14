@@ -15,12 +15,12 @@ const fullName = (p: any) => (p ? `${p.first_name} ${p.last_name}` : 'Persona')
 /** Sala di controllo del primo tempo: quattro riquadri, ognuno risponde a "chi aspetta me?". */
 async function loadBoard(): Promise<Board> {
   const [reg, plans, queue, titles, exp, people] = await Promise.all([
-    supabase.from('person').select('id, first_name, last_name, applied_as, created_at').eq('status', 'registered').neq('family', 'admin').order('created_at'),
-    supabase.from('path_plan').select('id, goal_capability, assigned_at, person:person!path_plan_person_id_fkey!inner(id, first_name, last_name, status), path_step(kind, position, status)').eq('status', 'active').eq('person.status', 'in_path').order('assigned_at'),
+    supabase.from('person').select('id, first_name, last_name, applied_as, created_at').eq('status', 'registered').neq('family', 'admin').is('archived_at', null).order('created_at'),
+    supabase.from('path_plan').select('id, goal_capability, assigned_at, person:person!path_plan_person_id_fkey!inner(id, first_name, last_name, status), path_step(kind, position, status)').eq('status', 'active').eq('person.status', 'in_path').is('person.archived_at', null).order('assigned_at'),
     supabase.from('ready_queue').select('plan_id, person_id, goal_capability, ready_since').order('ready_since'),
-    supabase.from('person_title').select('id, created_at, person(id, first_name, last_name), title_catalog(name_it)').eq('status', 'declared').order('created_at'),
+    supabase.from('person_title').select('id, created_at, person(id, first_name, last_name), title_catalog(name_it)').eq('status', 'declared').is('archived_at', null).order('created_at'),
     supabase.rpc('expiring', { p_days: EXPIRY_DAYS }),
-    supabase.from('person').select('id, first_name, last_name, status').neq('family', 'admin'),
+    supabase.from('person').select('id, first_name, last_name, status').neq('family', 'admin').is('archived_at', null),
   ])
   for (const r of [reg, plans, queue, titles, exp, people]) if (r.error) throw r.error
   const counts: Record<string, number> = { total: 0 }
