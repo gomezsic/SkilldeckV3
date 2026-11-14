@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { demoDecks } from '../lib/demo'
 import { supabase } from '../lib/supabase'
-import type { Deck } from '../lib/types'
 import ControlRoom from './ControlRoom'
-import MyDeck from './MyDeck'
 import People from './People'
 import PersonSheet from './PersonSheet'
 
@@ -11,7 +9,7 @@ import PersonSheet from './PersonSheet'
  * Ambiente di lavoro dell'amministratore: pensato per il desktop, organizzato per aree di lavoro
  * (non per i quattro mondi dello skipper). Le aree non ancora costruite restano visibili come mappa.
  */
-type AreaId = 'regia' | 'persone' | 'formazione' | 'ingaggi' | 'bordo' | 'comunicazioni' | 'contenuti' | 'commerciale' | 'sistema' | 'profilo'
+type AreaId = 'regia' | 'persone' | 'formazione' | 'ingaggi' | 'bordo' | 'comunicazioni' | 'contenuti' | 'commerciale' | 'sistema'
 interface Area { id: AreaId; label: string; ready: boolean; items: string[]; when: string }
 const areas: Area[] = [
   { id: 'regia', label: 'Cabina di regia', ready: true, items: [], when: '' },
@@ -25,7 +23,7 @@ const areas: Area[] = [
   { id: 'sistema', label: 'Sistema', ready: false, when: 'Primo tempo', items: ['Registro delle azioni', 'Simulazione utente in sola lettura', 'Statistiche e attività', 'Errori e salute del database'] },
 ]
 
-export default function AdminShell({ demo, badge, deck, onRefresh }: { demo: boolean; badge: string; deck: Deck; onRefresh: () => void }) {
+export default function AdminShell({ demo, badge }: { demo: boolean; badge: string }) {
   const [area, setArea] = useState<AreaId>('regia')
   const [openPerson, setOpenPerson] = useState<string | null>(null)
   const go = (a: AreaId) => { setArea(a); setOpenPerson(null) }
@@ -48,8 +46,7 @@ export default function AdminShell({ demo, badge, deck, onRefresh }: { demo: boo
           ))}
         </nav>
         <div className="hidden border-t border-white/15 px-3 py-3 text-sm lg:block">
-          <button type="button" onClick={() => go('profilo')} className={`flex h-10 w-full items-center rounded-lg px-3 font-medium ${area === 'profilo' ? 'bg-white text-ink' : 'hover:bg-white/10'}`}>Il mio profilo</button>
-          <div className="mt-2 flex items-center justify-between px-3 text-xs">
+          <div className="flex items-center justify-between px-3 text-xs">
             {badge ? <span className="rounded-full bg-warn-soft px-2 py-0.5 font-semibold text-warn">{badge}</span> : <span />}
             <span className="flex gap-3">
               {demo ? <a className="font-medium underline" href={location.pathname}>Esci dagli esempi</a> : (
@@ -76,7 +73,6 @@ export default function AdminShell({ demo, badge, deck, onRefresh }: { demo: boo
           {openPerson ? <div className="mx-auto max-w-3xl"><PersonSheet personId={openPerson} onBack={() => setOpenPerson(null)} /></div>
             : area === 'regia' ? <ControlRoom demo={demo} onOpen={setOpenPerson} />
             : area === 'persone' ? (demo ? <Placeholder title="Persone" when="" items={['Negli esempi l\'elenco delle persone non è disponibile: entra con il tuo utente.']} /> : <div><h1 className="text-2xl font-semibold">Persone</h1><p className="mt-1 text-sm text-ink-soft">Cerca chiunque e apri la sua scheda con i comandi.</p><People onOpen={setOpenPerson} /></div>)
-            : area === 'profilo' ? <div className="mx-auto max-w-2xl"><MyDeck deck={deck} readOnly={demo} onChanged={onRefresh} /></div>
             : current ? <Placeholder title={current.label} when={current.when} items={current.items} /> : null}
         </div>
       </main>

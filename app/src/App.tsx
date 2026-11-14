@@ -55,7 +55,7 @@ export default function App() {
 
   const isAdmin = deck.person.family === 'admin' || demoKey === 'admin'
   const badge = demo ? 'Dati di esempio' : envLabel
-  if (isAdmin) return <AdminShell demo={!!demo} badge={demo ? 'Dati di esempio' : envLabel} deck={deck} onRefresh={refresh} />
+  if (isAdmin) return <AdminShell demo={!!demo} badge={demo ? 'Dati di esempio' : envLabel} />
 
   const exit = demo
     ? <a className="font-medium text-sea" href={location.pathname}>Esci dagli esempi</a>

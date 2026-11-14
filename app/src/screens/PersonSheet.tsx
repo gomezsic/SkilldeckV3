@@ -116,8 +116,8 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
         )}
       </section>
 
-      <p className="px-1 text-xs font-semibold tracking-wide text-ink-soft uppercase">Il suo My Deck, in sola lettura</p>
-      <MyDeck deck={deck} readOnly onChanged={() => {}} />
+      <p className="px-1 text-xs font-semibold tracking-wide text-ink-soft uppercase">Il suo My Deck · puoi compilarlo tu al posto suo</p>
+      <MyDeck deck={deck} readOnly={false} onChanged={() => void reload()} />
     </div>
   )
 }

@@ -76,7 +76,7 @@ export async function uploadFile(personId: string, folder: string, file: File, l
   const path = `${personId}/${folder}/${crypto.randomUUID()}.${ext}`
   const up = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false })
   if (up.error) throw up.error
-  const f = await supabase.from('file').insert({ owner_person_id: personId, uploaded_by: personId, storage_path: path, mime_type: file.type, size_bytes: file.size, linked_table: linkedTable }).select('id').single()
+  const f = await supabase.from('file').insert({ owner_person_id: personId, uploaded_by: await actorId(), storage_path: path, mime_type: file.type, size_bytes: file.size, linked_table: linkedTable }).select('id').single()
   if (f.error) throw f.error
   return f.data.id
 }
@@ -107,4 +107,15 @@ export async function openFile(path: string) {
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60)
   if (error) throw error
   window.open(data.signedUrl, '_blank', 'noopener')
+}
+
+let actor: string | null = null
+/** La scheda di chi sta operando (diversa dal proprietario quando l'amministratore carica per un altro). */
+async function actorId(): Promise<string> {
+  if (actor) return actor
+  const { data: auth } = await supabase.auth.getUser()
+  const { data, error } = await supabase.from('person').select('id').eq('auth_user_id', auth.user?.id ?? '').single()
+  if (error) throw error
+  actor = data.id
+  return data.id
 }
