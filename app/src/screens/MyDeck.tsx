@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Chip, Empty, Field, Row, Section } from '../components/ui'
-import { declareTitle, listCatalog, openFile, savePersonalData } from '../lib/deck'
+import { addRow, declareTitle, listCatalog, openFile, removeSkill, saveOne, savePersonalData, uploadFile } from '../lib/deck'
+import { MiniForm, num, str } from './DeckForms'
 import {
   appliedAsLabel, capabilityLabel, daysTo, fmtDate, identityKindLabel, requirementLabel,
   skillKindLabel, sourceLabel, statusLabel, stepLabel, stepStatusLabel, titleStatusLabel,
@@ -89,11 +90,33 @@ export default function MyDeck({ deck, readOnly, onChanged }: { deck: Deck; read
       <Section title="Documenti e assicurazioni" summary={deck.identity.length + deck.insurance.length ? `${deck.identity.length + deck.insurance.length} caricati` : 'Nessun documento caricato'}>
         {deck.identity.length + deck.insurance.length === 0 ? <Empty>Documento d'identità e polizze, con la loro scadenza.</Empty> : (
           <ul className="divide-y divide-line">
-            {deck.identity.map((d) => <SimpleRow key={d.id} title={identityKindLabel[d.kind] ?? d.kind} expires={d.expires_on} />)}
-            {deck.insurance.map((d) => <SimpleRow key={d.id} title={d.kind} sub={d.company} expires={d.expires_on} />)}
+            {deck.identity.map((d) => <SimpleRow key={d.id} title={identityKindLabel[d.kind] ?? d.kind} expires={d.expires_on} filePath={d.file_path} />)}
+            {deck.insurance.map((d) => <SimpleRow key={d.id} title={d.kind} sub={d.company} expires={d.expires_on} filePath={d.file_path} />)}
           </ul>
         )}
-        <Soon>Aggiungi o rinnova</Soon>
+        {!readOnly && (
+          <>
+            <MiniForm open="Aggiungi un documento d'identità" submit="Carica" fields={[
+              { name: 'kind', label: 'Tipo', type: 'select', required: true, options: Object.entries(identityKindLabel).map(([value, label]) => ({ value, label })) },
+              { name: 'number', label: 'Numero (facoltativo)' },
+              { name: 'expires_on', label: 'Scadenza', type: 'date', required: true },
+              { name: 'file', label: 'File: PDF o foto, massimo 10 MB', type: 'file', required: true },
+            ]} onSave={async (v, file) => {
+              const file_id = await uploadFile(person.id, 'documenti', file!, 'identity_document')
+              await addRow('identity_document', { person_id: person.id, kind: v.kind, number: str(v.number), expires_on: str(v.expires_on), file_id }); onChanged()
+            }} />
+            <MiniForm open="Aggiungi un'assicurazione" submit="Carica" fields={[
+              { name: 'kind', label: 'Tipo di polizza', required: true, placeholder: 'Per esempio: responsabilità civile skipper' },
+              { name: 'company', label: 'Compagnia (facoltativo)' },
+              { name: 'policy_number', label: 'Numero di polizza (facoltativo)' },
+              { name: 'expires_on', label: 'Scadenza', type: 'date', required: true },
+              { name: 'file', label: 'File: PDF o foto, massimo 10 MB', type: 'file', required: true },
+            ]} onSave={async (v, file) => {
+              const file_id = await uploadFile(person.id, 'assicurazioni', file!, 'insurance')
+              await addRow('insurance', { person_id: person.id, kind: str(v.kind), company: str(v.company), policy_number: str(v.policy_number), expires_on: str(v.expires_on), file_id }); onChanged()
+            }} />
+          </>
+        )}
       </Section>
 
       <Section title="Competenze e lingue" summary={deck.skills.length ? `${deck.skills.length} voci` : 'Ancora da compilare'}>
@@ -105,14 +128,22 @@ export default function MyDeck({ deck, readOnly, onChanged }: { deck: Deck; read
                 <div key={k}>
                   <h3 className="text-xs font-semibold text-ink-soft">{skillKindLabel[k]}</h3>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {items.map((s) => <Chip key={s.value}>{s.value}{s.level ? ` · ${s.level}` : ''}</Chip>)}
+                    {items.map((s) => (
+                      <Chip key={s.value}>{s.value}{s.level ? ` · ${s.level}` : ''}
+                        {!readOnly && <button type="button" aria-label={`Togli ${s.value}`} className="ml-1.5 text-sm leading-none text-ink-soft" onClick={() => void removeSkill(person.id, k, s.value).then(onChanged)}>×</button>}
+                      </Chip>
+                    ))}
                   </div>
                 </div>
               )
             })}
           </div>
         )}
-        <Soon>Modifica</Soon>
+        {!readOnly && <MiniForm open="Aggiungi una voce" submit="Aggiungi" fields={[
+          { name: 'kind', label: 'Che cosa', type: 'select', required: true, options: Object.entries(skillKindLabel).map(([value, label]) => ({ value, label })) },
+          { name: 'value', label: 'Voce', required: true, placeholder: 'Per esempio: Inglese, Catamarano, Grecia ionica' },
+          { name: 'level', label: 'Livello (facoltativo)', placeholder: 'Per esempio: B2' },
+        ]} onSave={async (v) => { await addRow('person_skill', { person_id: person.id, kind: v.kind, value: str(v.value), level: str(v.level) }); onChanged() }} />}
       </Section>
 
       <Section title="Logbook" summary={deck.logbook.length ? `${Math.round(totals.miles)} miglia · ${totals.days} giorni · ${totals.nights} notti` : canLog ? 'Nessuna navigazione registrata' : 'Disponibile quando sei In percorso'}>
@@ -126,7 +157,20 @@ export default function MyDeck({ deck, readOnly, onChanged }: { deck: Deck; read
             ))}
           </ul>
         )}
-        {canLog && <Soon>Aggiungi una navigazione</Soon>}
+        {canLog && !readOnly && <MiniForm open="Aggiungi una navigazione" submit="Aggiungi" fields={[
+          { name: 'from_date', label: 'Dal', type: 'date', required: true },
+          { name: 'to_date', label: 'Al', type: 'date', required: true },
+          { name: 'route', label: 'Rotta', required: true, placeholder: 'Per esempio: Olbia – Bonifacio – Olbia' },
+          { name: 'miles', label: 'Miglia', type: 'number', required: true },
+          { name: 'days', label: 'Giorni', type: 'number' },
+          { name: 'nights', label: 'Notti in navigazione', type: 'number' },
+          { name: 'role_on_board', label: 'Il tuo ruolo a bordo', type: 'select', options: [{ value: 'skipper', label: 'Skipper' }, { value: 'co_skipper', label: 'Co-skipper' }, { value: 'fleet_leader', label: 'Capoflotta' }, { value: 'crew_assistant', label: 'Crew assistant' }, { value: 'hostess', label: 'Hostess' }, { value: 'cook', label: 'Cuoco' }, { value: 'staff', label: 'Staff' }] },
+          { name: 'boat_name', label: 'Barca (facoltativo)' },
+          { name: 'boat_type', label: 'Tipo di barca (facoltativo)', placeholder: 'Per esempio: catamarano 45 piedi' },
+        ]} onSave={async (v) => {
+          if (str(v.to_date)! < str(v.from_date)!) throw new Error('La data di fine viene prima di quella di inizio.')
+          await addRow('logbook_entry', { person_id: person.id, source: 'declared', from_date: str(v.from_date), to_date: str(v.to_date), route: str(v.route), miles: num(v.miles), days: num(v.days), nights: num(v.nights), role_on_board: str(v.role_on_board), boat_name: str(v.boat_name), boat_type: str(v.boat_type) }); onChanged()
+        }} />}
       </Section>
 
       <Section title="Il mio percorso" summary={activePlan ? `${activePlan.steps.filter((s) => s.status === 'done').length} passi fatti su ${activePlan.steps.filter((s) => s.status !== 'not_required').length}` : 'In attesa che la candidatura venga valutata'}>
@@ -153,21 +197,27 @@ export default function MyDeck({ deck, readOnly, onChanged }: { deck: Deck; read
         <Row label="Regime" value={deck.tax?.tax_regime} />
         <Row label="Partita IVA" value={deck.tax?.vat_number} />
         <Row label="IBAN" value={deck.tax?.iban} />
-        <Soon>Modifica</Soon>
+        <Row label="Intestatario del conto" value={deck.tax?.account_holder} />
+        {!readOnly && <MiniForm open="Modifica" fields={[
+          { name: 'tax_code', label: 'Codice fiscale', initial: deck.tax?.tax_code ?? '' },
+          { name: 'tax_regime', label: 'Regime fiscale', type: 'select', initial: deck.tax?.tax_regime ?? '', options: ['Prestazione occasionale', 'Forfettario', 'Ordinario', 'Altro'].map((x) => ({ value: x, label: x })) },
+          { name: 'vat_number', label: 'Partita IVA (se ce l\'hai)', initial: deck.tax?.vat_number ?? '' },
+          { name: 'iban', label: 'IBAN', initial: deck.tax?.iban ?? '' },
+          { name: 'account_holder', label: 'Intestatario del conto', initial: deck.tax?.account_holder ?? '' },
+        ]} onSave={async (v) => { await saveOne('tax_profile', person.id, { tax_code: str(v.tax_code)?.toUpperCase() ?? null, tax_regime: str(v.tax_regime), vat_number: str(v.vat_number), iban: str(v.iban)?.replace(/\s+/g, '').toUpperCase() ?? null, account_holder: str(v.account_holder) }); onChanged() }} />}
       </Section>
 
       <Section title="Preferenze e consensi" summary={deck.preferences?.marketing_opt_out ? 'Email promozionali spente' : 'Email promozionali accese'}>
         <Row label="Consenso privacy" value={deck.preferences?.privacy_consent_at ? `Dato il ${fmtDate(deck.preferences.privacy_consent_at.slice(0, 10))}` : null} />
         <Row label="Email promozionali" value={deck.preferences?.marketing_opt_out ? 'Spente' : 'Accese'} />
         <Row label="Profilo in vetrina" value={deck.preferences?.showcase_consent ? 'Sì' : 'No'} />
-        <Soon>Modifica</Soon>
+        {!readOnly && <MiniForm open="Modifica" fields={[
+          { name: 'marketing', label: 'Voglio ricevere le email promozionali', type: 'checkbox', initial: !deck.preferences?.marketing_opt_out },
+          { name: 'showcase', label: 'Acconsento a comparire nella vetrina dei profili', type: 'checkbox', initial: !!deck.preferences?.showcase_consent },
+        ]} onSave={async (v) => { await saveOne('person_preferences', person.id, { marketing_opt_out: !v.marketing, showcase_consent: !!v.showcase }); onChanged() }} />}
       </Section>
     </div>
   )
-}
-
-function Soon({ children }: { children: string }) {
-  return <button type="button" disabled className="mt-3 h-11 w-full rounded-xl border border-dashed border-line text-sm font-medium text-ink-soft">{children} · in arrivo</button>
 }
 
 function TitleRow({ t }: { t: Title }) {
@@ -187,12 +237,13 @@ function TitleRow({ t }: { t: Title }) {
   )
 }
 
-function SimpleRow({ title, sub, expires }: { title: string; sub?: string | null; expires: string | null }) {
+function SimpleRow({ title, sub, expires, filePath }: { title: string; sub?: string | null; expires: string | null; filePath?: string | null }) {
   const ex = expiryNote(expires)
   return (
     <li className="py-2.5">
       <p className="text-sm font-medium">{title}</p>
       <p className={`text-xs ${ex.tone === 'bad' ? 'text-bad' : ex.tone === 'warn' ? 'text-warn' : 'text-ink-soft'}`}>{sub ? `${sub} · ` : ''}{ex.text}</p>
+      {filePath && <button type="button" className="mt-1 text-xs font-semibold text-sea" onClick={() => void openFile(filePath).catch(alertError)}>Apri il file</button>}
     </li>
   )
 }

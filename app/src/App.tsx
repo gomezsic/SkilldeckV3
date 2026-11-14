@@ -102,7 +102,7 @@ export default function App() {
               ))}
             </nav>
           )}
-          {tab === 'deck' ? <MyDeck deck={deck} readOnly={!!demo} onChanged={refresh} />
+          {tab === 'deck' ? <MyDeck deck={deck} readOnly={!!demo && !(import.meta.env.DEV && location.search.includes('edit'))} onChanged={refresh} />
             : tab === 'today' ? <Today deck={deck} onOpenDeck={() => { setTab('deck'); scrollTo(0, 0) }} />
             : (
               <div className="mt-16 text-center">
