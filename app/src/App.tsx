@@ -5,7 +5,7 @@ import { demoDecks } from './lib/demo'
 import { envLabel, supabase } from './lib/supabase'
 import type { Deck } from './lib/types'
 import { Register, SignIn } from './screens/Access'
-import ControlRoom from './screens/ControlRoom'
+import AdminShell from './screens/AdminShell'
 import MyDeck from './screens/MyDeck'
 import Today from './screens/Today'
 
@@ -55,11 +55,12 @@ export default function App() {
 
   const isAdmin = deck.person.family === 'admin' || demoKey === 'admin'
   const badge = demo ? 'Dati di esempio' : envLabel
+  if (isAdmin) return <AdminShell demo={!!demo} badge={demo ? 'Dati di esempio' : envLabel} deck={deck} onRefresh={refresh} />
+
   const exit = demo
     ? <a className="font-medium text-sea" href={location.pathname}>Esci dagli esempi</a>
     : (
       <span className="flex items-center gap-3">
-        {isAdmin && <a className="font-medium text-sea" href="?demo=admin">Esempi</a>}
         <button type="button" className="font-medium text-sea" onClick={() => void supabase.auth.signOut()}>Esci</button>
       </span>
     )
@@ -93,7 +94,7 @@ export default function App() {
           </span>
         </div>
 
-        <main className={`w-full flex-1 px-4 pb-28 lg:mx-auto lg:px-8 lg:py-8 ${isAdmin && tab === 'today' ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`}>
+        <main className={`w-full flex-1 px-4 pb-28 lg:mx-auto lg:px-8 lg:py-8 lg:max-w-2xl`}>
           {demo && (
             <nav aria-label="Esempi" className="mb-3 flex flex-wrap gap-2 text-xs">
               {[...Object.keys(demoDecks), 'admin'].map((k) => (
@@ -102,7 +103,7 @@ export default function App() {
             </nav>
           )}
           {tab === 'deck' ? <MyDeck deck={deck} readOnly={!!demo} onChanged={refresh} />
-            : tab === 'today' ? (isAdmin ? <ControlRoom demo={!!demo} /> : <Today deck={deck} onOpenDeck={() => { setTab('deck'); scrollTo(0, 0) }} />)
+            : tab === 'today' ? <Today deck={deck} onOpenDeck={() => { setTab('deck'); scrollTo(0, 0) }} />
             : (
               <div className="mt-16 text-center">
                 <h1 className="text-xl font-semibold">{tabs.find((t) => t.id === tab)?.label}</h1>

@@ -46,7 +46,7 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
 
   return (
     <div className="space-y-3">
-      <button type="button" onClick={onBack} className="text-sm font-medium text-sea">‹ Sala di controllo</button>
+      <button type="button" onClick={onBack} className="text-sm font-medium text-sea">‹ Indietro</button>
 
       <section className="rounded-2xl border border-line bg-card p-4">
         <div className="flex items-center justify-between gap-3">

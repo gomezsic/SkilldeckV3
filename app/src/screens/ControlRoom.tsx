@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { Chip } from '../components/ui'
 import { appliedAsLabel, capabilityLabel, fmtDate, stepLabel } from '../lib/labels'
 import { supabase } from '../lib/supabase'
-import People from './People'
-import PersonSheet from './PersonSheet'
 
 interface Item { id: string; personId?: string; name: string; detail: string; since: string | null }
 interface Board { registered: Item[]; inPath: Item[]; readyQueue: Item[]; titles: Item[] }
@@ -55,29 +53,26 @@ export const demoBoard: Board = {
   ],
 }
 
-export default function ControlRoom({ demo }: { demo: boolean }) {
+export default function ControlRoom({ demo, onOpen: setOpenPerson }: { demo: boolean; onOpen: (personId: string) => void }) {
   const [board, setBoard] = useState<Board | null>(demo ? demoBoard : null)
   const [error, setError] = useState<string | null>(null)
-  const [openPerson, setOpenPerson] = useState<string | null>(null)
   const reload = () => { if (!demo) loadBoard().then(setBoard).catch((e) => setError(e?.message ?? 'Errore di caricamento')) }
   useEffect(reload, [demo])
 
-  if (openPerson) return <PersonSheet personId={openPerson} onBack={() => { setOpenPerson(null); reload() }} />
 
   if (error) return <p role="alert" className="text-sm text-bad">{error}</p>
   if (!board) return <p className="text-sm text-ink-soft">Carico…</p>
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Sala di controllo</h1>
+      <h1 className="text-2xl font-semibold">Cabina di regia</h1>
       <p className="mt-1 text-sm text-ink-soft">Chi sta aspettando una tua decisione.</p>
-      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+      <div className="mt-4 grid gap-3 xl:grid-cols-2">
         <Tile title="Nuove registrazioni" hint="In attesa di colloquio" empty="Nessuna nuova registrazione." items={board.registered} onOpen={setOpenPerson} />
         <Tile title="Pronti per Ready" hint="Percorso completato, manca la tua conferma" empty="Nessuno in coda." items={board.readyQueue} flagAfter={WAIT_FLAG_DAYS} tone="ok" onOpen={setOpenPerson} />
         <Tile title="In percorso" hint="Con il passo aperto" empty="Nessuno in percorso." items={board.inPath} onOpen={setOpenPerson} />
         <Tile title="Titoli da verificare" hint="Dichiarati, in attesa di controllo" empty="Nessun titolo da verificare." items={board.titles} onOpen={setOpenPerson} />
       </div>
-      {!demo && <People onOpen={setOpenPerson} />}
       <p className="mt-4 text-xs text-ink-soft">{demo ? 'Negli esempi le schede non si aprono.' : 'Tocca una persona per aprire la sua scheda con i comandi.'}</p>
     </div>
   )
