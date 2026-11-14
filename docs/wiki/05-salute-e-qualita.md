@@ -4,7 +4,7 @@ Obiettivo: accorgersi dei problemi prima degli utenti, e non perdere il controll
 
 ## 1. Controllo di salute (dentro l'app)
 
-Area **Sistema** dell'amministratore. Funzione `system_health()`: 34 verifiche, ognuna dice quanti casi ha trovato e cosa fare. "Esegui e salva nello storico" lascia una riga in `health_run`, così si vede se la situazione migliora o peggiora.
+Area **Sistema** dell'amministratore. Funzione `system_health()`: 32 verifiche, ognuna dice quanti casi ha trovato e cosa fare. "Esegui e salva nello storico" lascia una riga in `health_run`, così si vede se la situazione migliora o peggiora.
 
 | Area | Cosa cerca |
 |---|---|
