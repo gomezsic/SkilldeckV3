@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Button } from '../components/ui'
 import { addRow, removeSkill, saveOne, setSkills } from '../lib/deck'
 import { friendly, say, useUnsaved } from '../lib/friendly'
 import { type Option, grouped, loadLists, pick } from '../lib/lists'
