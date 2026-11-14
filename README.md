@@ -21,3 +21,15 @@ Fase: nucleo (persona, percorso, profilo, documenti). Solo database, nessuna app
 
 - Collaudo: progetto Supabase `skilldeck-v3-collaudo` (Europa). Le migrazioni di questa cartella sono applicate lì.
 - Produzione: non ancora creata.
+
+## Applicazione (cartella `app/`)
+
+React, Vite e Tailwind. Per vederla in locale:
+
+```
+cd app
+npm install
+npm run dev
+```
+
+Poi apri l'indirizzo indicato. Con `?demo=registrato`, `?demo=percorso` o `?demo=ready` vedi My Deck con persone inventate, senza accedere. Il file `app/.env` punta al database di collaudo e contiene solo valori pubblici.

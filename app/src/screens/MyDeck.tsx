@@ -1,0 +1,240 @@
+import { useState } from 'react'
+import { Button, Chip, Empty, Field, Row, Section } from '../components/ui'
+import { savePersonalData } from '../lib/deck'
+import {
+  appliedAsLabel, capabilityLabel, daysTo, fmtDate, identityKindLabel, requirementLabel,
+  skillKindLabel, sourceLabel, statusLabel, stepLabel, stepStatusLabel, titleStatusLabel,
+} from '../lib/labels'
+import type { Deck, Person, Title } from '../lib/types'
+
+const statusTone = { registered: 'neutral', in_path: 'sea', ready: 'ok', not_accepted: 'neutral', excluded: 'bad' } as const
+const titleTone = { draft: 'neutral', declared: 'sea', verified: 'ok', rejected: 'bad', replaced: 'neutral' } as const
+const EXPIRY_WARNING_DAYS = 60
+
+function expiryNote(iso: string | null): { text: string; tone: 'neutral' | 'warn' | 'bad' } {
+  const d = daysTo(iso)
+  if (d === null) return { text: 'Senza scadenza', tone: 'neutral' }
+  if (d < 0) return { text: `Scaduto il ${fmtDate(iso)}`, tone: 'bad' }
+  if (d <= EXPIRY_WARNING_DAYS) return { text: `Scade tra ${d} giorni`, tone: 'warn' }
+  return { text: `Valido fino al ${fmtDate(iso)}`, tone: 'neutral' }
+}
+
+export default function MyDeck({ deck, readOnly, onChanged }: { deck: Deck; readOnly: boolean; onChanged: () => void }) {
+  const { person, compliance, titles } = deck
+  const activeCaps = deck.capabilities.filter((c) => c.status === 'active')
+  const missing = compliance.filter((c) => !c.covered)
+  const isSkipperFamily = person.family === 'skipper'
+  const expiring = titles.filter((t) => { const d = daysTo(t.expires_on); return d !== null && d <= EXPIRY_WARNING_DAYS && t.status !== 'rejected' })
+  const rejected = titles.filter((t) => t.status === 'rejected')
+  const activePlan = deck.plans.find((p) => p.status === 'active') ?? deck.plans.at(-1)
+  const canLog = person.status === 'in_path' || person.status === 'ready'
+  const totals = deck.logbook.reduce((a, e) => ({ miles: a.miles + Number(e.miles ?? 0), days: a.days + (e.days ?? 0), nights: a.nights + (e.nights ?? 0) }), { miles: 0, days: 0, nights: 0 })
+
+  return (
+    <div className="space-y-3">
+      {/* Riepilogo: chi sono */}
+      <header className="rounded-2xl bg-ink p-5 text-white">
+        <div className="flex items-center gap-4">
+          <div aria-hidden className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-white/15 text-lg font-semibold">
+            {person.first_name[0]}{person.last_name[0]}
+          </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold">{person.first_name} {person.last_name}</h1>
+            <p className="mt-0.5 text-sm text-white/75">
+              {activeCaps.length ? activeCaps.map((c) => capabilityLabel[c.capability] ?? c.capability).join(' · ')
+                : person.applied_as ? `Candidatura: ${appliedAsLabel[person.applied_as]}` : 'Profilo'}
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Chip tone={statusTone[person.status]}>{statusLabel[person.status]}</Chip>
+          {isSkipperFamily && (missing.length === 0
+            ? <Chip tone="ok">In regola: 3 di 3</Chip>
+            : <Chip tone="warn">In regola: {3 - missing.length} di 3</Chip>)}
+        </div>
+      </header>
+
+      {/* Cosa posso dimostrare: i tre requisiti */}
+      {isSkipperFamily && (
+        <section className="rounded-2xl border border-line bg-card p-4">
+          <h2 className="text-sm font-semibold text-ink-soft">Requisiti per navigare come skipper</h2>
+          <ul className="mt-2 divide-y divide-line">
+            {compliance.map((c) => (
+              <li key={c.requirement} className="flex items-center justify-between gap-3 py-2.5">
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{requirementLabel[c.requirement]}</span>
+                  <span className="block text-xs text-ink-soft">
+                    {c.covered ? `Coperto da ${titles.find((t) => t.code === c.by_title)?.name_it ?? c.by_title}` : 'Manca un titolo valido con il file caricato'}
+                  </span>
+                </span>
+                {c.covered ? <Chip tone="ok">Coperto</Chip> : <Chip tone="warn">Manca</Chip>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <Section title="Dati personali" summary={person.phone ? 'Identità, contatti, lingua' : 'Manca il telefono'} tone={person.phone ? undefined : 'warn'}>
+        <PersonalData person={person} readOnly={readOnly} onChanged={onChanged} />
+      </Section>
+
+      <Section title="Titoli e certificazioni"
+        summary={rejected.length ? `${rejected.length} da ricaricare` : expiring.length ? `${expiring.length} in scadenza` : titles.length ? `${titles.length} caricati` : 'Nessun titolo caricato'}
+        tone={rejected.length ? 'bad' : expiring.length ? 'warn' : undefined}>
+        {titles.length === 0 ? <Empty>Carica qui patente, SRC e First Aid: servono per essere in regola.</Empty>
+          : <ul className="divide-y divide-line">{titles.map((t) => <TitleRow key={t.id} t={t} />)}</ul>}
+        <Soon>Aggiungi un titolo</Soon>
+      </Section>
+
+      <Section title="Documenti e assicurazioni" summary={deck.identity.length + deck.insurance.length ? `${deck.identity.length + deck.insurance.length} caricati` : 'Nessun documento caricato'}>
+        {deck.identity.length + deck.insurance.length === 0 ? <Empty>Documento d'identità e polizze, con la loro scadenza.</Empty> : (
+          <ul className="divide-y divide-line">
+            {deck.identity.map((d) => <SimpleRow key={d.id} title={identityKindLabel[d.kind] ?? d.kind} expires={d.expires_on} />)}
+            {deck.insurance.map((d) => <SimpleRow key={d.id} title={d.kind} sub={d.company} expires={d.expires_on} />)}
+          </ul>
+        )}
+        <Soon>Aggiungi o rinnova</Soon>
+      </Section>
+
+      <Section title="Competenze e lingue" summary={deck.skills.length ? `${deck.skills.length} voci` : 'Ancora da compilare'}>
+        {deck.skills.length === 0 ? <Empty>Lingue, competenze tecniche, zone e tipi di barca che conosci.</Empty> : (
+          <div className="space-y-3">
+            {(['language', 'technical', 'area', 'boat_type'] as const).map((k) => {
+              const items = deck.skills.filter((s) => s.kind === k)
+              return items.length === 0 ? null : (
+                <div key={k}>
+                  <h3 className="text-xs font-semibold text-ink-soft">{skillKindLabel[k]}</h3>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {items.map((s) => <Chip key={s.value}>{s.value}{s.level ? ` · ${s.level}` : ''}</Chip>)}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        <Soon>Modifica</Soon>
+      </Section>
+
+      <Section title="Logbook" summary={deck.logbook.length ? `${Math.round(totals.miles)} miglia · ${totals.days} giorni · ${totals.nights} notti` : canLog ? 'Nessuna navigazione registrata' : 'Disponibile quando sei In percorso'}>
+        {deck.logbook.length === 0 ? <Empty>{canLog ? 'Registra qui le tue navigazioni: restano tue per sempre.' : 'Il logbook si apre quando la tua candidatura viene accettata.'}</Empty> : (
+          <ul className="divide-y divide-line">
+            {deck.logbook.map((e) => (
+              <li key={e.id} className="py-2.5">
+                <p className="text-sm font-medium">{e.route ?? 'Navigazione'}</p>
+                <p className="text-xs text-ink-soft">{fmtDate(e.from_date)} – {fmtDate(e.to_date)} · {e.miles ?? 0} miglia · {sourceLabel[e.source]}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        {canLog && <Soon>Aggiungi una navigazione</Soon>}
+      </Section>
+
+      <Section title="Il mio percorso" summary={activePlan ? `${activePlan.steps.filter((s) => s.status === 'done').length} passi fatti su ${activePlan.steps.filter((s) => s.status !== 'not_required').length}` : 'In attesa che la candidatura venga valutata'}>
+        {!activePlan ? <Empty>Quando la tua candidatura viene accettata, qui trovi i passi da fare per diventare Ready.</Empty> : (
+          <>
+            <p className="mb-2 text-sm text-ink-soft">Obiettivo: <span className="font-medium text-ink">{capabilityLabel[activePlan.goal_capability] ?? activePlan.goal_capability}</span></p>
+            <ol className="space-y-2">
+              {activePlan.steps.map((s) => (
+                <li key={s.kind} className="flex items-center gap-3">
+                  <span aria-hidden className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold ${s.status === 'done' ? 'bg-ok text-white' : s.status === 'in_progress' ? 'bg-sea text-white' : 'bg-sand text-ink-soft'}`}>
+                    {s.status === 'done' ? '✓' : s.position}
+                  </span>
+                  <span className="flex-1 text-sm font-medium">{stepLabel[s.kind]}</span>
+                  <span className="text-xs text-ink-soft">{s.status === 'done' && s.done_at ? fmtDate(s.done_at.slice(0, 10)) : stepStatusLabel[s.status]}</span>
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
+      </Section>
+
+      <Section title="Dati fiscali" summary={deck.tax?.tax_code ? 'Compilati' : 'Da compilare quando vuoi'}>
+        <Row label="Codice fiscale" value={deck.tax?.tax_code} />
+        <Row label="Regime" value={deck.tax?.tax_regime} />
+        <Row label="Partita IVA" value={deck.tax?.vat_number} />
+        <Row label="IBAN" value={deck.tax?.iban} />
+        <Soon>Modifica</Soon>
+      </Section>
+
+      <Section title="Preferenze e consensi" summary={deck.preferences?.marketing_opt_out ? 'Email promozionali spente' : 'Email promozionali accese'}>
+        <Row label="Consenso privacy" value={deck.preferences?.privacy_consent_at ? `Dato il ${fmtDate(deck.preferences.privacy_consent_at.slice(0, 10))}` : null} />
+        <Row label="Email promozionali" value={deck.preferences?.marketing_opt_out ? 'Spente' : 'Accese'} />
+        <Row label="Profilo in vetrina" value={deck.preferences?.showcase_consent ? 'Sì' : 'No'} />
+        <Soon>Modifica</Soon>
+      </Section>
+    </div>
+  )
+}
+
+function Soon({ children }: { children: string }) {
+  return <button type="button" disabled className="mt-3 h-11 w-full rounded-xl border border-dashed border-line text-sm font-medium text-ink-soft">{children} · in arrivo</button>
+}
+
+function TitleRow({ t }: { t: Title }) {
+  const ex = expiryNote(t.expires_on)
+  return (
+    <li className="py-2.5">
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 text-sm font-medium">{t.name_it}</p>
+        <Chip tone={titleTone[t.status]}>{titleStatusLabel[t.status]}</Chip>
+      </div>
+      <p className={`mt-0.5 text-xs ${ex.tone === 'bad' ? 'text-bad' : ex.tone === 'warn' ? 'text-warn' : 'text-ink-soft'}`}>
+        {ex.text}{!t.has_file ? ' · manca il file' : ''}
+      </p>
+      {t.status === 'rejected' && t.rejection_reason && <p className="mt-1 rounded-lg bg-bad-soft px-2.5 py-1.5 text-xs text-bad">{t.rejection_reason}</p>}
+    </li>
+  )
+}
+
+function SimpleRow({ title, sub, expires }: { title: string; sub?: string | null; expires: string | null }) {
+  const ex = expiryNote(expires)
+  return (
+    <li className="py-2.5">
+      <p className="text-sm font-medium">{title}</p>
+      <p className={`text-xs ${ex.tone === 'bad' ? 'text-bad' : ex.tone === 'warn' ? 'text-warn' : 'text-ink-soft'}`}>{sub ? `${sub} · ` : ''}{ex.text}</p>
+    </li>
+  )
+}
+
+function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnly: boolean; onChanged: () => void }) {
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({ first_name: person.first_name, last_name: person.last_name, phone: person.phone ?? '', birth_date: person.birth_date ?? '' })
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (!editing) {
+    return (
+      <>
+        <Row label="Nome" value={`${person.first_name} ${person.last_name}`} />
+        <Row label="Email" value={person.email} />
+        <Row label="Telefono" value={person.phone} />
+        <Row label="Data di nascita" value={person.birth_date ? fmtDate(person.birth_date) : null} />
+        <Row label="Lingua" value={person.ui_language === 'it' ? 'Italiano' : 'English'} />
+        <Button variant="ghost" className="mt-3" onClick={() => setEditing(true)} disabled={readOnly}>
+          {readOnly ? 'Modifica · non attiva sui dati di esempio' : 'Modifica'}
+        </Button>
+      </>
+    )
+  }
+  const save = async () => {
+    setBusy(true); setError(null)
+    try {
+      await savePersonalData(person.id, {
+        first_name: form.first_name.trim(), last_name: form.last_name.trim(),
+        phone: form.phone.trim() || null, birth_date: form.birth_date || null, ui_language: person.ui_language,
+      })
+      setEditing(false); onChanged()
+    } catch (e) { setError(e instanceof Error ? e.message : 'Salvataggio non riuscito') } finally { setBusy(false) }
+  }
+  return (
+    <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void save() }}>
+      <Field label="Nome" required value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
+      <Field label="Cognome" required value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+      <Field label="Telefono" type="tel" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+      <Field label="Data di nascita" type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} />
+      {error && <p role="alert" className="text-sm text-bad">{error}</p>}
+      <Button type="submit" disabled={busy}>{busy ? 'Salvo…' : 'Salva'}</Button>
+      <Button type="button" variant="ghost" onClick={() => setEditing(false)}>Annulla</Button>
+    </form>
+  )
+}
