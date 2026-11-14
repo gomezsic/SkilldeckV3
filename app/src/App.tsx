@@ -5,6 +5,7 @@ import { demoDecks } from './lib/demo'
 import { envLabel, supabase } from './lib/supabase'
 import type { Deck } from './lib/types'
 import { Register, SignIn } from './screens/Access'
+import ControlRoom from './screens/ControlRoom'
 import MyDeck from './screens/MyDeck'
 import Today from './screens/Today'
 
@@ -22,7 +23,7 @@ const soon: Record<'job' | 'skills', string> = {
 
 export default function App() {
   const demoKey = new URLSearchParams(location.search).get('demo')
-  const demo = demoKey ? demoDecks[demoKey] ?? demoDecks.percorso : null
+  const demo = demoKey ? demoDecks[demoKey] ?? (demoKey === 'admin' ? { ...demoDecks.registrato, person: { ...demoDecks.registrato.person, first_name: 'Admin', last_name: 'Esempio', family: 'admin' as const, applied_as: null } } : demoDecks.percorso) : null
 
   const [session, setSession] = useState<Session | null | undefined>(demo ? null : undefined)
   const [deck, setDeck] = useState<Deck | null | undefined>(demo ?? undefined)
@@ -52,36 +53,61 @@ export default function App() {
   }
   if (!deck) return <Splash />
 
+  const isAdmin = deck.person.family === 'admin' || demoKey === 'admin'
+  const badge = demo ? 'Dati di esempio' : envLabel
+  const exit = demo
+    ? <a className="font-medium text-sea" href={location.pathname}>Esci</a>
+    : <button type="button" className="font-medium text-sea" onClick={() => void supabase.auth.signOut()}>Esci</button>
+
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col">
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <span className="text-sm font-semibold tracking-wide text-sea">SKILLDECK</span>
-        <span className="flex items-center gap-2 text-xs text-ink-soft">
-          {demo ? <span className="rounded-full bg-warn-soft px-2 py-0.5 font-semibold text-warn">Dati di esempio</span>
-            : envLabel && <span className="rounded-full bg-warn-soft px-2 py-0.5 font-semibold text-warn">{envLabel}</span>}
-          {demo ? <a className="font-medium text-sea" href={location.pathname}>Esci</a>
-            : <button type="button" className="font-medium text-sea" onClick={() => void supabase.auth.signOut()}>Esci</button>}
-        </span>
+    <div className="mx-auto flex min-h-full max-w-md flex-col lg:max-w-none lg:flex-row">
+      {/* Desktop: menu di lato */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-card px-4 py-6 lg:flex">
+        <span className="px-3 text-sm font-semibold tracking-wide text-sea">SKILLDECK</span>
+        <nav aria-label="Sezioni" className="mt-6 flex-1 space-y-1">
+          {tabs.map((t) => (
+            <button key={t.id} type="button" onClick={() => setTab(t.id)} aria-current={tab === t.id ? 'page' : undefined}
+              className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium ${tab === t.id ? 'bg-ink text-white' : 'text-ink-soft hover:bg-sand'}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={t.icon} /></svg>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+        <div className="flex items-center justify-between px-3 text-xs">
+          {badge ? <span className="rounded-full bg-warn-soft px-2 py-0.5 font-semibold text-warn">{badge}</span> : <span />}
+          {exit}
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 lg:hidden">
+          <span className="text-sm font-semibold tracking-wide text-sea">SKILLDECK</span>
+          <span className="flex items-center gap-2 text-xs text-ink-soft">
+            {badge && <span className="rounded-full bg-warn-soft px-2 py-0.5 font-semibold text-warn">{badge}</span>}
+            {exit}
+          </span>
+        </div>
+
+        <main className={`w-full flex-1 px-4 pb-28 lg:mx-auto lg:px-8 lg:py-8 ${isAdmin && tab === 'today' ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`}>
+          {demo && (
+            <nav aria-label="Esempi" className="mb-3 flex flex-wrap gap-2 text-xs">
+              {[...Object.keys(demoDecks), 'admin'].map((k) => (
+                <a key={k} href={`?demo=${k}`} className={`rounded-full border px-3 py-1.5 font-semibold capitalize ${k === demoKey ? 'border-ink bg-ink text-white' : 'border-line bg-card'}`}>{k === 'admin' ? 'Amministratore' : k}</a>
+              ))}
+            </nav>
+          )}
+          {tab === 'deck' ? <MyDeck deck={deck} readOnly={!!demo} onChanged={refresh} />
+            : tab === 'today' ? (isAdmin ? <ControlRoom demo={!!demo} /> : <Today deck={deck} onOpenDeck={() => { setTab('deck'); scrollTo(0, 0) }} />)
+            : (
+              <div className="mt-16 text-center">
+                <h1 className="text-xl font-semibold">{tabs.find((t) => t.id === tab)?.label}</h1>
+                <p className="mx-auto mt-2 max-w-xs text-sm text-ink-soft">{soon[tab]}</p>
+              </div>
+            )}
+        </main>
       </div>
 
-      <main className="flex-1 px-4 pb-28">
-        {demo && (
-          <nav aria-label="Esempi" className="mb-3 flex gap-2 text-xs">
-            {Object.keys(demoDecks).map((k) => (
-              <a key={k} href={`?demo=${k}`} className={`rounded-full border px-3 py-1.5 font-semibold capitalize ${k === demoKey ? 'border-ink bg-ink text-white' : 'border-line bg-card'}`}>{k}</a>
-            ))}
-          </nav>
-        )}
-        {tab === 'deck' ? <MyDeck deck={deck} readOnly={!!demo} onChanged={refresh} />
-          : tab === 'today' ? <Today deck={deck} onOpenDeck={() => { setTab('deck'); scrollTo(0, 0) }} /> : (
-          <div className="mt-16 text-center">
-            <h1 className="text-xl font-semibold">{tabs.find((t) => t.id === tab)?.label}</h1>
-            <p className="mx-auto mt-2 max-w-xs text-sm text-ink-soft">{soon[tab]}</p>
-          </div>
-        )}
-      </main>
-
-      <nav aria-label="Sezioni" className="fixed inset-x-0 bottom-0 border-t border-line bg-card pb-[env(safe-area-inset-bottom)]">
+      <nav aria-label="Sezioni" className="fixed inset-x-0 bottom-0 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden">
         <ul className="mx-auto grid max-w-md grid-cols-4">
           {tabs.map((t) => (
             <li key={t.id}>
