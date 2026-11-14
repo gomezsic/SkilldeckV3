@@ -1,10 +1,22 @@
 import { useEffect } from 'react'
+import { reportError } from './errors'
 
 /**
  * Regola del prodotto (owner, 14/11/2026): mai errori generici. Ogni messaggio dice che cosa è successo
  * e che cosa fare, con parole da non esperti. Tutti gli errori passano da qui prima di arrivare sullo schermo.
  */
 export function friendly(e: unknown, doing = 'salvare'): string {
+  const shown = explain(e, doing)
+  // Nel registro finiscono solo i guasti veri: non i controlli sui dati (i nostri messaggi e le regole del database) e non la rete assente.
+  const err = (e ?? {}) as { message?: string; code?: string }
+  const ours = (e instanceof Error && !err.code && e.name === 'Error') || err.code === 'P0001'
+  if (!ours && (typeof navigator === 'undefined' || navigator.onLine !== false)) {
+    const m = String(err.message ?? e ?? '')
+    reportError({ source: /fetch|network|load failed/i.test(m) ? 'rete' : 'salvataggio', message: `${doing}: ${m}`, shown, code: err.code })
+  }
+  return shown
+}
+function explain(e: unknown, doing: string): string {
   const err = (e ?? {}) as { message?: string; code?: string; status?: number; statusCode?: string | number; name?: string }
   const text = String(err.message ?? '')
   const m = text.toLowerCase()

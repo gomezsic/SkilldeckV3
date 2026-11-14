@@ -1,0 +1,69 @@
+# 00 · Bussola
+
+Aggiornata il **14 novembre 2026, ore 16:30**. Ultima migrazione: **0015**. Sito di collaudo: https://skilldeckpro-v3.web.app
+
+## Dove siamo
+
+SkillDeck V3 è la nuova piattaforma, costruita in parallelo a quella attuale (skilldeckpro.com, che resta in servizio e non si tocca). Il passaggio è previsto tra 6 e 7 mesi, in due tempi:
+
+1. **Primo tempo: la persona.** Candidatura, colloquio, percorso fino a Ready, profilo completo, documenti, logbook. **È quello che stiamo costruendo.**
+2. **Secondo tempo: il lavoro.** Ingaggi, lettere, bordo. Non iniziato.
+
+Avanzamento del primo tempo, per blocchi:
+
+| Blocco | Stato |
+|---|---|
+| Accesso (email e Google) e candidatura identica a quella di oggi | Costruito. Accesso Google provato dal vivo; candidatura provata sul database |
+| Colloqui: date proposte, fissare, spostare, chiudere, fasce modificabili | Costruito, provato sul database |
+| Percorso: accetta, piano, passi, coda "Pronti per Ready", conferma | Costruito. Accettazione provata dal vivo |
+| Profilo completo: foto, curriculum, titoli, documenti, assicurazioni, logbook, fiscale | Costruito, provato in locale |
+| Ambiente amministratore: cabina di regia, persone, impostazioni, sistema | Costruito. Cinque aree restano segnaposto |
+| Note, decisioni, promemoria, messaggi sulla persona | Costruito, provato sul database |
+| Salute del sistema: controllo, registro errori, prove automatiche | Costruito, provato sul database e in locale |
+| Test (Skipper Test, Crew Test) | **Non iniziato** |
+| Career (edizioni, lezioni, valutazioni, formatori) | **Non iniziato** |
+| Email (modelli approvati, invii controllati, registro) | **Non iniziato**: manca la posta sul dominio |
+| Migrazione dei dati dalla piattaforma attuale | **Non iniziata** |
+
+## Cosa è fatto bene
+
+- **La sicurezza sta nel database, non nell'app.** Ogni tabella ha la protezione riga per riga; lo stato della persona cambia solo tramite comandi; ogni comando scrive nel registro delle azioni. Il controllo di salute del 14/11 non trova nessuna falla aperta.
+- **Niente si perde.** Persone, titoli e documenti si archiviano e si ripristinano. I file non si sovrascrivono.
+- **Controlli di buon senso ovunque**, ripetuti nel modulo e nel database, con messaggi che dicono cosa correggere.
+- **Elenchi modificabili** dall'amministratore senza toccare il codice.
+- **Pubblicazione automatica** a ogni modifica, con prove automatiche prima.
+
+## Cosa va sistemato
+
+Debolezze note, in ordine di importanza.
+
+1. **Quasi nulla è stato provato dal vivo da un utente vero.** È il rischio maggiore: finché l'owner non prova i moduli sul sito, i difetti di salvataggio restano nascosti. Il registro degli errori (area Sistema) ora li raccoglie da solo.
+2. **Posta di prova di Supabase**: rifiuta i domini aziendali e ha un tetto orario. Blocca le registrazioni con email. Serve la posta sul dominio skilldeckpro.com.
+3. **Indirizzo del sito in Supabase** ancora da impostare su https://skilldeckpro-v3.web.app (i link di conferma email altrimenti portano altrove). Lo fa l'owner.
+4. **Protezione delle password compromesse** spenta in Supabase (segnalata dal controllo di Supabase). Si accende dal pannello, lo fa l'owner.
+5. **La coda "Pronti per Ready" non esclude le persone archiviate.**
+6. **Il repository è pubblico**: consigliato renderlo privato.
+7. **Le prove automatiche coprono solo due moduli** (dati fiscali e logbook). Mancano quelle sulle fasce dei colloqui e sulle schermate.
+8. **Nessuna prova automatica del database.** Le regole di accesso sono state provate a mano, non c'è una serie ripetibile.
+9. **I livelli di cucina e di competenza e i prefissi telefonici** sono ancora fissi nel codice.
+10. **App Google in modalità Test**: entrano solo gli utenti di prova aggiunti dall'owner.
+
+## Cosa manca per chiudere il profilo
+
+- Email di promemoria delle scadenze (dipende dalla posta).
+- Lettura automatica della scadenza dal documento (serve scegliere un servizio).
+- Decisione dell'owner sulle lettere di referenza: tenerle o toglierle.
+- Simulazione utente ("guarda come questa persona").
+
+## Cosa viene dopo
+
+1. Prove dal vivo dell'owner su candidatura e profilo, e correzione di ciò che emerge.
+2. Posta sul dominio e piano email (sei regole già approvate).
+3. Test: un solo motore per Skipper Test e Crew Test.
+4. Career e area formazione.
+5. Migrazione dei dati sani dalla piattaforma attuale.
+6. Secondo tempo.
+
+## Scadenze esterne
+
+- **16 novembre 2026**: esame reale WTest Water Tribe sulla piattaforma **attuale**, circa 100 persone. Non riguarda la V3 e non si tocca.

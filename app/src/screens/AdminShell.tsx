@@ -7,6 +7,7 @@ import ControlRoom from './ControlRoom'
 import People from './People'
 import PersonSheet from './PersonSheet'
 import Settings from './Settings'
+import System from './System'
 
 /**
  * Ambiente di lavoro dell'amministratore: pensato per il desktop, organizzato per aree di lavoro
@@ -23,7 +24,7 @@ const areas: Area[] = [
   { id: 'comunicazioni', label: 'Comunicazioni', ready: false, when: 'Primo tempo', items: ['Editor email a blocchi', 'Modelli da approvare', 'Email automatiche con interruttore singolo', 'Campagne in quattro passi', 'Registro degli invii', 'Promemoria'] },
   { id: 'contenuti', label: 'Contenuti', ready: false, when: 'Più avanti', items: ['Base di conoscenza e assistente di bordo', 'Portolano e guide', 'Glossario, traduzioni, COLREG'] },
   { id: 'commerciale', label: 'Commerciale', ready: false, when: 'Più avanti', items: ['Clienti', 'Recensioni', 'Sondaggi', 'Marketing e corsi'] },
-  { id: 'sistema', label: 'Sistema', ready: false, when: 'Primo tempo', items: ['Registro delle azioni', 'Simulazione utente in sola lettura', 'Statistiche e attività', 'Errori e salute del database'] },
+  { id: 'sistema', label: 'Sistema', ready: true, items: [], when: '' },
   { id: 'impostazioni', label: 'Impostazioni', ready: true, items: [], when: '' },
 ]
 
@@ -78,6 +79,7 @@ export default function AdminShell({ demo, badge }: { demo: boolean; badge: stri
           {openPerson ? <div className="mx-auto max-w-3xl"><PersonSheet personId={openPerson} onBack={() => setOpenPerson(null)} /></div>
             : area === 'regia' ? <ControlRoom demo={demo} onOpen={setOpenPerson} />
             : area === 'persone' ? (demo ? <Placeholder title="Persone" when="" items={['Negli esempi l\'elenco delle persone non è disponibile: entra con il tuo utente.']} /> : <div><h1 className="text-2xl font-semibold">Persone</h1><p className="mt-1 text-sm text-ink-soft">Cerca chiunque e apri la sua scheda con i comandi.</p><People onOpen={setOpenPerson} /></div>)
+            : area === 'sistema' ? (demo ? <Placeholder title="Sistema" when="" items={['Negli esempi il controllo di salute non è disponibile: entra con il tuo utente.']} /> : <System />)
             : area === 'impostazioni' ? (demo ? <Placeholder title="Impostazioni" when="" items={['Negli esempi le impostazioni non sono disponibili: entra con il tuo utente.']} /> : <Settings />)
             : current ? <Placeholder title={current.label} when={current.when} items={current.items} /> : null}
         </div>
