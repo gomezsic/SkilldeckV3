@@ -8,7 +8,7 @@ import InterviewSettings from './InterviewSettings'
 
 interface Item { id: string; personId?: string; name: string; detail: string; since: string | null }
 interface Board { memos: Item[]; interviews: Item[]; registered: Item[]; inPath: Item[]; readyQueue: Item[]; titles: Item[]; expiring: Item[]; counts: Record<string, number> }
-const EXPIRY_DAYS = 60
+const EXPIRY_DAYS = 90
 const kindLabel: Record<string, string> = { title: 'Titolo', identity_document: 'Documento', insurance: 'Assicurazione' }
 const WAIT_FLAG_DAYS = 7
 

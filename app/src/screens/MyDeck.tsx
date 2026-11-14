@@ -16,13 +16,14 @@ import type { Deck, IdentityDoc, Insurance, Person, Title } from '../lib/types'
 
 const statusTone = { registered: 'neutral', in_path: 'sea', ready: 'ok', not_accepted: 'neutral', excluded: 'bad' } as const
 const titleTone = { draft: 'neutral', declared: 'sea', verified: 'ok', rejected: 'bad', replaced: 'neutral' } as const
-const EXPIRY_WARNING_DAYS = 60
+const EXPIRY_WARNING_DAYS = 90
 
 function expiryNote(iso: string | null): { text: string; tone: 'neutral' | 'warn' | 'bad' } {
   const d = daysTo(iso)
   if (d === null) return { text: 'Senza scadenza', tone: 'neutral' }
   if (d < 0) return { text: `Scaduto il ${fmtDate(iso)}`, tone: 'bad' }
-  if (d <= EXPIRY_WARNING_DAYS) return { text: `Scade tra ${d} giorni`, tone: 'warn' }
+  if (d <= 30) return { text: d === 0 ? 'Scade oggi: rinnovalo subito' : `Scade tra ${d} ${d === 1 ? 'giorno' : 'giorni'}: rinnovalo subito`, tone: 'bad' }
+  if (d <= EXPIRY_WARNING_DAYS) return { text: `Scade tra ${d} giorni (${fmtDate(iso)}): pensa al rinnovo`, tone: 'warn' }
   return { text: `Valido fino al ${fmtDate(iso)}`, tone: 'neutral' }
 }
 
