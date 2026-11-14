@@ -2,20 +2,25 @@ import { supabase } from './supabase'
 import type { Deck, Person, Plan, Title } from './types'
 
 /** Legge tutto ciò che serve a My Deck. Le regole di accesso stanno nel database: qui si legge solo ciò che è mio. */
-export async function loadDeck(): Promise<Deck | null> {
-  const { data: person, error } = await supabase
-    .from('person')
-    .select('id, first_name, last_name, email, phone, birth_date, ui_language, family, status, applied_as')
-    .maybeSingle()
+export async function loadDeck(personId?: string): Promise<Deck | null> {
+  // Senza personId leggo la MIA scheda (l'amministratore vede tutte le righe: il filtro è obbligatorio).
+  let q = supabase.from('person').select('id, first_name, last_name, email, phone, birth_date, ui_language, family, status, applied_as')
+  if (personId) q = q.eq('id', personId)
+  else {
+    const { data: auth } = await supabase.auth.getUser()
+    if (!auth.user) return null
+    q = q.eq('auth_user_id', auth.user.id)
+  }
+  const { data: person, error } = await q.maybeSingle()
   if (error) throw error
   if (!person) return null
   const pid = (person as Person).id
 
   const [caps, plans, titles, compliance, identity, insurance, skills, logbook, tax, prefs] = await Promise.all([
     supabase.from('person_capability').select('capability, status').eq('person_id', pid),
-    supabase.from('path_plan').select('id, goal_capability, status, path_step(kind, position, status, done_at)').eq('person_id', pid).order('created_at'),
+    supabase.from('path_plan').select('id, goal_capability, status, path_step(id, kind, position, status, done_at)').eq('person_id', pid).order('created_at'),
     supabase.from('person_title').select('id, status, expires_on, file_id, rejection_reason, title_catalog(code, name_it)').eq('person_id', pid).neq('status', 'replaced'),
-    supabase.rpc('compliance'),
+    supabase.rpc('compliance', { p_person: pid }),
     supabase.from('identity_document').select('id, kind, expires_on').eq('person_id', pid),
     supabase.from('insurance').select('id, kind, company, expires_on').eq('person_id', pid),
     supabase.from('person_skill').select('kind, value, level').eq('person_id', pid),

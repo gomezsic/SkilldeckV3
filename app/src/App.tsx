@@ -56,8 +56,13 @@ export default function App() {
   const isAdmin = deck.person.family === 'admin' || demoKey === 'admin'
   const badge = demo ? 'Dati di esempio' : envLabel
   const exit = demo
-    ? <a className="font-medium text-sea" href={location.pathname}>Esci</a>
-    : <button type="button" className="font-medium text-sea" onClick={() => void supabase.auth.signOut()}>Esci</button>
+    ? <a className="font-medium text-sea" href={location.pathname}>Esci dagli esempi</a>
+    : (
+      <span className="flex items-center gap-3">
+        {isAdmin && <a className="font-medium text-sea" href="?demo=admin">Esempi</a>}
+        <button type="button" className="font-medium text-sea" onClick={() => void supabase.auth.signOut()}>Esci</button>
+      </span>
+    )
 
   return (
     <div className="mx-auto flex min-h-full max-w-md flex-col lg:max-w-none lg:flex-row">

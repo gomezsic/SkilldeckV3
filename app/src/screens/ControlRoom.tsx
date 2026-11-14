@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Chip } from '../components/ui'
 import { appliedAsLabel, capabilityLabel, fmtDate, stepLabel } from '../lib/labels'
 import { supabase } from '../lib/supabase'
+import PersonSheet from './PersonSheet'
 
-interface Item { id: string; name: string; detail: string; since: string | null }
+interface Item { id: string; personId?: string; name: string; detail: string; since: string | null }
 interface Board { registered: Item[]; inPath: Item[]; readyQueue: Item[]; titles: Item[] }
 const WAIT_FLAG_DAYS = 7
 
@@ -16,7 +17,7 @@ async function loadBoard(): Promise<Board> {
     supabase.from('person').select('id, first_name, last_name, applied_as, created_at').eq('status', 'registered').neq('family', 'admin').order('created_at'),
     supabase.from('path_plan').select('id, goal_capability, assigned_at, person:person!path_plan_person_id_fkey!inner(id, first_name, last_name, status), path_step(kind, position, status)').eq('status', 'active').eq('person.status', 'in_path').order('assigned_at'),
     supabase.from('ready_queue').select('plan_id, person_id, goal_capability, ready_since').order('ready_since'),
-    supabase.from('person_title').select('id, created_at, person(first_name, last_name), title_catalog(name_it)').eq('status', 'declared').order('created_at'),
+    supabase.from('person_title').select('id, created_at, person(id, first_name, last_name), title_catalog(name_it)').eq('status', 'declared').order('created_at'),
   ])
   for (const r of [reg, plans, queue, titles]) if (r.error) throw r.error
 
@@ -30,13 +31,13 @@ async function loadBoard(): Promise<Board> {
   }
 
   return {
-    registered: (reg.data ?? []).map((p: any) => ({ id: p.id, name: fullName(p), detail: p.applied_as ? `Si candida come ${appliedAsLabel[p.applied_as]}` : 'Candidatura', since: p.created_at })),
+    registered: (reg.data ?? []).map((p: any) => ({ id: p.id, personId: p.id, name: fullName(p), detail: p.applied_as ? `Si candida come ${appliedAsLabel[p.applied_as]}` : 'Candidatura', since: p.created_at })),
     inPath: (plans.data ?? []).filter((p: any) => !queued.has(p.id)).map((p: any) => {
       const open = [...p.path_step].sort((a, b) => a.position - b.position).find((s) => s.status === 'todo' || s.status === 'in_progress')
-      return { id: p.id, name: fullName(p.person), detail: `${capabilityLabel[p.goal_capability] ?? p.goal_capability} · passo aperto: ${open ? stepLabel[open.kind as keyof typeof stepLabel] : 'nessuno'}`, since: p.assigned_at }
+      return { id: p.id, personId: p.person.id, name: fullName(p.person), detail: `${capabilityLabel[p.goal_capability] ?? p.goal_capability} · passo aperto: ${open ? stepLabel[open.kind as keyof typeof stepLabel] : 'nessuno'}`, since: p.assigned_at }
     }),
-    readyQueue: (queue.data ?? []).map((q: any) => ({ id: q.plan_id, name: names.get(q.person_id) ?? 'Persona', detail: `Obiettivo: ${capabilityLabel[q.goal_capability] ?? q.goal_capability}`, since: q.ready_since })),
-    titles: (titles.data ?? []).map((t: any) => ({ id: t.id, name: fullName(t.person), detail: t.title_catalog?.name_it ?? 'Titolo', since: t.created_at })),
+    readyQueue: (queue.data ?? []).map((q: any) => ({ id: q.plan_id, personId: q.person_id, name: names.get(q.person_id) ?? 'Persona', detail: `Obiettivo: ${capabilityLabel[q.goal_capability] ?? q.goal_capability}`, since: q.ready_since })),
+    titles: (titles.data ?? []).map((t: any) => ({ id: t.id, personId: t.person?.id, name: fullName(t.person), detail: t.title_catalog?.name_it ?? 'Titolo', since: t.created_at })),
   }
 }
 
@@ -56,7 +57,11 @@ export const demoBoard: Board = {
 export default function ControlRoom({ demo }: { demo: boolean }) {
   const [board, setBoard] = useState<Board | null>(demo ? demoBoard : null)
   const [error, setError] = useState<string | null>(null)
-  useEffect(() => { if (!demo) loadBoard().then(setBoard).catch((e) => setError(e?.message ?? 'Errore di caricamento')) }, [demo])
+  const [openPerson, setOpenPerson] = useState<string | null>(null)
+  const reload = () => { if (!demo) loadBoard().then(setBoard).catch((e) => setError(e?.message ?? 'Errore di caricamento')) }
+  useEffect(reload, [demo])
+
+  if (openPerson) return <PersonSheet personId={openPerson} onBack={() => { setOpenPerson(null); reload() }} />
 
   if (error) return <p role="alert" className="text-sm text-bad">{error}</p>
   if (!board) return <p className="text-sm text-ink-soft">Carico…</p>
@@ -66,17 +71,17 @@ export default function ControlRoom({ demo }: { demo: boolean }) {
       <h1 className="text-2xl font-semibold">Sala di controllo</h1>
       <p className="mt-1 text-sm text-ink-soft">Chi sta aspettando una tua decisione.</p>
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
-        <Tile title="Nuove registrazioni" hint="In attesa di colloquio" empty="Nessuna nuova registrazione." items={board.registered} />
-        <Tile title="Pronti per Ready" hint="Percorso completato, manca la tua conferma" empty="Nessuno in coda." items={board.readyQueue} flagAfter={WAIT_FLAG_DAYS} tone="ok" />
-        <Tile title="In percorso" hint="Con il passo aperto" empty="Nessuno in percorso." items={board.inPath} />
-        <Tile title="Titoli da verificare" hint="Dichiarati, in attesa di controllo" empty="Nessun titolo da verificare." items={board.titles} />
+        <Tile title="Nuove registrazioni" hint="In attesa di colloquio" empty="Nessuna nuova registrazione." items={board.registered} onOpen={setOpenPerson} />
+        <Tile title="Pronti per Ready" hint="Percorso completato, manca la tua conferma" empty="Nessuno in coda." items={board.readyQueue} flagAfter={WAIT_FLAG_DAYS} tone="ok" onOpen={setOpenPerson} />
+        <Tile title="In percorso" hint="Con il passo aperto" empty="Nessuno in percorso." items={board.inPath} onOpen={setOpenPerson} />
+        <Tile title="Titoli da verificare" hint="Dichiarati, in attesa di controllo" empty="Nessun titolo da verificare." items={board.titles} onOpen={setOpenPerson} />
       </div>
-      <p className="mt-4 text-xs text-ink-soft">Per ora la sala è in sola lettura. I comandi (accetta, conferma Ready, verifica titolo) arrivano nella scheda della persona.</p>
+      <p className="mt-4 text-xs text-ink-soft">{demo ? 'Negli esempi le schede non si aprono.' : 'Tocca una persona per aprire la sua scheda con i comandi.'}</p>
     </div>
   )
 }
 
-function Tile({ title, hint, empty, items, flagAfter, tone }: { title: string; hint: string; empty: string; items: Item[]; flagAfter?: number; tone?: 'ok' }) {
+function Tile({ title, hint, empty, items, flagAfter, tone, onOpen }: { title: string; hint: string; empty: string; items: Item[]; flagAfter?: number; tone?: 'ok'; onOpen: (personId: string) => void }) {
   return (
     <section className="rounded-2xl border border-line bg-card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -91,7 +96,8 @@ function Tile({ title, hint, empty, items, flagAfter, tone }: { title: string; h
           {items.slice(0, 6).map((i) => {
             const d = daysSince(i.since)
             return (
-              <li key={i.id} className="flex items-center justify-between gap-3 py-2.5">
+              <li key={i.id}>
+                <button type="button" disabled={!i.personId} onClick={() => i.personId && onOpen(i.personId)} className="flex w-full items-center justify-between gap-3 py-2.5 text-left enabled:hover:bg-sand/60">
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium">{i.name}</span>
                   <span className="block truncate text-xs text-ink-soft">{i.detail}</span>
@@ -99,6 +105,7 @@ function Tile({ title, hint, empty, items, flagAfter, tone }: { title: string; h
                 {flagAfter !== undefined && d >= flagAfter
                   ? <Chip tone="warn">In attesa da {d} giorni</Chip>
                   : <span className="shrink-0 text-xs text-ink-soft">{i.since ? fmtDate(i.since.slice(0, 10)) : ''}</span>}
+                </button>
               </li>
             )
           })}

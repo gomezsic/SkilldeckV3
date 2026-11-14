@@ -211,7 +211,7 @@ function PersonalData({ person, readOnly, onChanged }: { person: Person; readOnl
         <Row label="Data di nascita" value={person.birth_date ? fmtDate(person.birth_date) : null} />
         <Row label="Lingua" value={person.ui_language === 'it' ? 'Italiano' : 'English'} />
         <Button variant="ghost" className="mt-3" onClick={() => setEditing(true)} disabled={readOnly}>
-          {readOnly ? 'Modifica · non attiva sui dati di esempio' : 'Modifica'}
+          {readOnly ? 'Modifica · non attiva in sola lettura' : 'Modifica'}
         </Button>
       </>
     )

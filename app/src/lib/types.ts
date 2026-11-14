@@ -18,7 +18,7 @@ export interface Person {
   applied_as: AppliedAs | null
 }
 export interface Capability { capability: string; status: 'active' | 'pending' | 'revoked' }
-export interface Step { kind: StepKind; position: number; status: StepStatus; done_at: string | null }
+export interface Step { id?: string; kind: StepKind; position: number; status: StepStatus; done_at: string | null }
 export interface Plan { id: string; goal_capability: string; status: 'active' | 'completed' | 'closed'; steps: Step[] }
 export interface Title {
   id: string; code: string; name_it: string; status: TitleStatus
