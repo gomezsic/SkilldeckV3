@@ -1,6 +1,6 @@
 # 00 · Bussola
 
-Aggiornata il **14 novembre 2026, ore 16:40**. Ultima migrazione: **0016**. Sito di collaudo: https://skilldeckpro-v3.web.app
+Aggiornata il **16 novembre 2026, ore 14:00**. Ultima migrazione: **0016**. Sito di collaudo: https://skilldeckpro-v3.web.app
 
 ## Dove siamo
 
@@ -41,7 +41,6 @@ Debolezze note, in ordine di importanza.
 2. **Posta di prova di Supabase**: rifiuta i domini aziendali e ha un tetto orario. Blocca le registrazioni con email. Serve la posta sul dominio skilldeckpro.com.
 3. **Indirizzo del sito in Supabase**: impostato dall'owner il 14/11. Da confermare alla prima registrazione con email.
 4. **Protezione delle password compromesse** spenta in Supabase (segnalata dal controllo di Supabase). Si accende dal pannello, lo fa l'owner.
-5. **Il repository è pubblico**: consigliato renderlo privato.
 6. **Le prove automatiche coprono solo due moduli** (dati fiscali e logbook). Mancano quelle sulle fasce dei colloqui e sulle schermate.
 7. **Nessuna prova automatica del database.** Le regole di accesso sono state provate a mano, non c'è una serie ripetibile.
 8. **I livelli di cucina e di competenza e i prefissi telefonici** sono ancora fissi nel codice.
