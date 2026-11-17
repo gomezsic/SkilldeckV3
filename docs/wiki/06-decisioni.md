@@ -20,6 +20,15 @@ Le decisioni dell'owner che guidano il lavoro, in ordine di tempo. Una decisione
 | 14/11 | Curriculum: lettura compatta a righe approvata; modifica ridisegnata più compatta, in attesa di parere. | |
 | 14/11 | Il logbook legge sia Excel sia CSV. | |
 | 14/11 | Strumento di salute dentro l'app e wiki del progetto nel repository. | Non perdere la bussola quando il progetto cresce |
+| 16/11 | Quattro mondi ridefiniti: Today, My Job, My Deck (strumenti "sei in viaggio"), My Skills (crescita e Curriculum nautico). | Definizione scritta dall'owner |
+| 17/11 | Il profilo sta tutto in My Skills; toccando la propria foto si apre il profilo da ogni pagina. | Realizzato lo stesso giorno |
+| 17/11 | My Deck è sempre utile: strumenti generali sempre accesi, strumenti dell'ingaggio solo con un incarico. | |
+| 17/11 | L'utente può chiedere la cancellazione del proprio account: è una richiesta che arriva all'amministratore. | |
+| 17/11 | Verifica in due passaggi obbligatoria per l'amministratore, dall'apertura agli utenti veri. | |
+| 17/11 | Un solo registro clienti (nome, cognome, email, telefono se c'è) con le vacanze fatte e lo skipper con cui hanno navigato. Clienti senza account. | |
+| 17/11 | Il co-skipper vede e aiuta; le conferme le dà lo skipper. | |
+| 17/11 | Migrazione 2026: si portano clienti (anche i 10 senza vacanze), 60 ingaggi con barche, incarichi a bordo, partecipazioni. Non si portano le 9 bozze e l'ingaggio annullato. | Ricognizione in sola lettura del 17/11 |
+| 17/11 | Compensi e pagamenti fanno parte dell'ingaggio, sia per quelli passati sia per quelli futuri. | Corregge la proposta di lasciarli in archivio |
 
 ## Aperte, in attesa dell'owner
 

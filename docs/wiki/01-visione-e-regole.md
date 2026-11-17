@@ -7,7 +7,7 @@ La piattaforma attuale funziona ma è cresciuta per aggiunte: 286 tabelle (67 vu
 ## Principi del prodotto
 
 - **Prima la persona, poi i dati.** Lo schermo non rappresenta il database: risponde a "chi sei, cosa devi fare, cosa ti serve vedere".
-- **Quattro mondi per l'utente**: Today, My Job, My Deck, My Skills.
+- **Quattro mondi per l'utente**: Today (prossimo passo, segnalazioni, scadenze), My Job (ingaggi, bacheca, calendario), My Deck (strumenti per quando si è in viaggio), My Skills (profilo completo, crescita, Curriculum nautico). Il profilo sta in My Skills; la foto in alto lo apre da ogni pagina (decisione del 17/11).
 - **Cinque famiglie**: Skipper, Crew/Staff, Formatore, Armatore, Amministratore.
 - **Stati della persona**: Registrato, In percorso, Ready, Non accettato, Escluso. Ready lo conferma sempre l'amministratore.
 - **L'amministratore lavora da computer**, in un ambiente separato con nove aree.

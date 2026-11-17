@@ -12,7 +12,7 @@ export function Chip({ tone = 'neutral', children }: { tone?: Tone; children: Re
   return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${toneClass[tone]}`}>{children}</span>
 }
 
-/** Una sezione di My Deck: una scheda che si apre con un tocco. */
+/** Una sezione del profilo: una scheda che si apre con un tocco. */
 export function Section({ title, summary, tone, children, defaultOpen = false }: {
   title: string; summary: string; tone?: Tone; children: ReactNode; defaultOpen?: boolean
 }) {

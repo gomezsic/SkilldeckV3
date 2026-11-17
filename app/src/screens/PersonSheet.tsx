@@ -19,7 +19,7 @@ const templates = [
   { id: 'career_and_documents', label: 'Senza test', hint: 'Career e documenti' },
 ] as const
 
-/** Scheda della persona vista dall'amministratore: i comandi in alto, sotto il suo My Deck in sola lettura. */
+/** Scheda della persona vista dall'amministratore: i comandi in alto, sotto il suo profilo in sola lettura. */
 export default function PersonSheet({ personId, onBack }: { personId: string; onBack: () => void }) {
   const [deck, setDeck] = useState<Deck | null>(null)
   const [busy, setBusy] = useState(false)
@@ -134,7 +134,7 @@ export default function PersonSheet({ personId, onBack }: { personId: string; on
 
       <CandidacyPanel personId={person.id} onChanged={() => { setNoteVersion((v) => v + 1); void reload() }} />
 
-      <p className="px-1 text-xs font-semibold tracking-wide text-ink-soft uppercase">Il suo My Deck · puoi compilarlo tu al posto suo</p>
+      <p className="px-1 text-xs font-semibold tracking-wide text-ink-soft uppercase">Il suo profilo · puoi compilarlo tu al posto suo</p>
       <MyDeck deck={deck} readOnly={false} admin onChanged={() => void reload()} />
 
       <section className="rounded-2xl border border-line bg-card p-4">

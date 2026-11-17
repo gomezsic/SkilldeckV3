@@ -9,7 +9,7 @@ const stepHelp: Record<StepKind, string> = {
   interview: 'Ti contattiamo noi per fissare il colloquio.',
   test: 'Ti arriva il link del test quando viene aperta la sessione.',
   career: 'Segui la tua Career: date e valutazioni arrivano dal tuo formatore.',
-  documents: 'Carica i titoli che mancano: li trovi in My Deck.',
+  documents: 'Carica i titoli che mancano: li trovi in My Skills.',
   ready_confirmation: 'Hai completato il percorso. Aspetti la conferma finale.',
 }
 

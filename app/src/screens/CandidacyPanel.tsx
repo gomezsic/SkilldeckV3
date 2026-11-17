@@ -140,7 +140,7 @@ export default function CandidacyPanel({ personId, onChanged }: { personId: stri
         if (error) throw error
         await reload()
       }} />}
-      <p className="mt-2 text-xs text-ink-soft">Lingue e certificazioni dichiarate sono qui sotto, nel suo My Deck.</p>
+      <p className="mt-2 text-xs text-ink-soft">Lingue e certificazioni dichiarate sono qui sotto, nel suo profilo.</p>
     </section>
   )
 }

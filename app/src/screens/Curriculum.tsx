@@ -100,7 +100,7 @@ function SkillBlock({ deck, kind, list, title, hint, empty, lists, readOnly, onC
   )
 }
 
-/** Il curriculum dentro My Deck: si legge come una pagina, si modifica un blocco alla volta. */
+/** Il curriculum dentro il profilo (My Skills): si legge come una pagina, si modifica un blocco alla volta. */
 export default function Curriculum({ deck, readOnly, onChanged }: { deck: Deck; readOnly: boolean; onChanged: () => void }) {
   const [lists, setLists] = useState<Option[]>([])
   useEffect(() => { loadLists().then(setLists).catch(() => setLists([])) }, []) // senza elenchi resta la lettura e l'aggiunta libera

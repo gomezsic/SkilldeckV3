@@ -17,7 +17,7 @@ Per ogni funzione: dove sta nel codice e quanto è stata verificata (livelli spi
 | Funzione | Dove | Verifica |
 |---|---|---|
 | Today per stato, con la scheda del colloquio | `Today.tsx` | Provato in locale |
-| My Deck: riepilogo, tre requisiti, dati personali | `MyDeck.tsx` | Modifica dati provata dal vivo |
+| My Skills (profilo): riepilogo, tre requisiti, dati personali; la foto in alto apre il profilo | `MyDeck.tsx`, `App.tsx` | Modifica dati provata dal vivo |
 | Foto del profilo con ritaglio | `ProfileExtras.tsx`, `CropDialog.tsx` | Solo compilato |
 | Scheda certificazione: catalogo a gruppi, ente, numero, rilascio, scadenza calcolata, file | `TitleForm.tsx` | Provato in locale |
 | Carica documento: foto alleggerita, ritaglio, rotazione | `components/ui.tsx`, `lib/image.ts` | Provato in locale |
@@ -39,7 +39,7 @@ Per ogni funzione: dove sta nel codice e quanto è stata verificata (livelli spi
 | Colloquio: fissa, sposta, annulla, segna fatto con nota | `CandidacyPanel.tsx` | Provato sul database |
 | Modifica delle risposte della candidatura | `CandidacyPanel.tsx` | Solo compilato |
 | Note, promemoria, email e WhatsApp dal proprio programma | `PersonNotes.tsx` | Provato sul database |
-| Compilare My Deck al posto della persona; archivia e ripristina | `MyDeck.tsx` | Provato sul database |
+| Compilare il profilo al posto della persona; archivia e ripristina | `MyDeck.tsx` | Provato sul database |
 | Impostazioni: 20 elenchi e catalogo dei 41 titoli | `Settings.tsx` | Solo compilato |
 | Fasce dei colloqui | `InterviewSettings.tsx` | Provato sul database |
 | Sistema: controllo di salute, registro errori, registro azioni | `System.tsx` | Controllo provato sul database |

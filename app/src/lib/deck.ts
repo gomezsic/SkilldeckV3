@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import type { Deck, Person, Plan, Title } from './types'
 
-/** Legge tutto ciò che serve a My Deck. Le regole di accesso stanno nel database: qui si legge solo ciò che è mio. */
+/** Legge tutto ciò che serve al profilo (che si vede in My Skills). Le regole di accesso stanno nel database: qui si legge solo ciò che è mio. */
 export async function loadDeck(personId?: string): Promise<Deck | null> {
   // Senza personId leggo la MIA scheda (l'amministratore vede tutte le righe: il filtro è obbligatorio).
   let q = supabase.from('person').select('id, first_name, last_name, email, phone, birth_date, ui_language, family, status, applied_as, archived_at, gender, address, city, mother_tongue, photo_file_id')

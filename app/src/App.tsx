@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { loadDeck } from './lib/deck'
+import { loadDeck, signedUrl } from './lib/deck'
 import { demoDecks } from './lib/demo'
 import { envLabel, supabase } from './lib/supabase'
 import type { Deck } from './lib/types'
@@ -18,12 +18,30 @@ type Tab = 'today' | 'job' | 'deck' | 'skills'
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'today', label: 'Today', icon: 'M12 3v2m0 14v2m9-9h-2M5 12H3m14.5-6.5-1.4 1.4M7.9 16.1l-1.4 1.4m0-12 1.4 1.4m8.2 8.2 1.4 1.4M12 8a4 4 0 100 8 4 4 0 000-8z' },
   { id: 'job', label: 'My Job', icon: 'M4 8h16v11H4zM9 8V5h6v3' },
-  { id: 'deck', label: 'My Deck', icon: 'M12 12a4 4 0 100-8 4 4 0 000 8zm-7 8a7 7 0 0114 0' },
+  { id: 'deck', label: 'My Deck', icon: 'M12 3a9 9 0 100 18 9 9 0 000-18zm3.5 5.5-2 5-5 2 2-5z' },
   { id: 'skills', label: 'My Skills', icon: 'M12 4l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8z' },
 ]
-const soon: Record<'job' | 'skills', string> = {
+const soon: Record<'job' | 'deck', string> = {
   job: 'Qui arriveranno bacheca, candidature e ingaggi, nel secondo tempo.',
-  skills: 'Qui arriveranno Career, formazione e crescita.',
+  deck: 'Qui troverai gli strumenti per quando sei in viaggio: meteo, numeri utili, check-in, crew list, logbook di bordo e chiusura dell\'ingaggio. Arrivano nel secondo tempo.',
+}
+
+/** La mia foto in alto: un tocco e si apre il profilo completo, che sta in My Skills. */
+function ProfileButton({ deck, active, onOpen }: { deck: Deck; active: boolean; onOpen: () => void }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    if (!deck.photo_path) { setUrl(null); return }
+    signedUrl(deck.photo_path).then((u) => { if (alive) setUrl(u) }).catch(() => { if (alive) setUrl(null) })
+    return () => { alive = false }
+  }, [deck.photo_path])
+  const { first_name, last_name } = deck.person
+  return (
+    <button type="button" onClick={onOpen} aria-label="Apri il mio profilo" title="Il mio profilo"
+      className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-ink text-xs font-semibold text-white ${active ? 'ring-2 ring-sea' : ''}`}>
+      {url ? <img src={url} alt="" className="h-9 w-9 object-cover" /> : <span aria-hidden>{first_name[0]}{last_name[0]}</span>}
+    </button>
+  )
 }
 
 export default function App() {
@@ -94,6 +112,7 @@ export default function App() {
   const badge = demo ? 'Dati di esempio' : envLabel
   if (isAdmin) return <AdminShell demo={!!demo} badge={demo ? 'Dati di esempio' : envLabel} />
 
+  const openProfile = () => { if (canLeave()) { setTab('skills'); scrollTo(0, 0) } }
   const exit = demo
     ? <a className="font-medium text-sea" href={location.pathname}>Esci dagli esempi</a>
     : (
@@ -117,6 +136,10 @@ export default function App() {
             </button>
           ))}
         </nav>
+        <button type="button" onClick={openProfile} className="mb-3 flex items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-ink hover:bg-sand">
+          <ProfileButton deck={deck} active={tab === 'skills'} onOpen={() => {}} />
+          <span className="min-w-0 truncate">{deck.person.first_name} {deck.person.last_name}</span>
+        </button>
         <div className="flex items-center justify-between px-3 text-xs">
           {badge ? <span className="rounded-full bg-warn-soft px-2 py-0.5 font-semibold text-warn">{badge}</span> : <span />}
           {exit}
@@ -129,6 +152,7 @@ export default function App() {
           <span className="flex items-center gap-2 text-xs text-ink-soft">
             {badge && <span className="rounded-full bg-warn-soft px-2 py-0.5 font-semibold text-warn">{badge}</span>}
             {exit}
+            <ProfileButton deck={deck} active={tab === 'skills'} onOpen={openProfile} />
           </span>
         </div>
 
@@ -140,8 +164,8 @@ export default function App() {
               ))}
             </nav>
           )}
-          {tab === 'deck' ? <MyDeck deck={deck} readOnly={!!demo && !(import.meta.env.DEV && location.search.includes('edit'))} onChanged={refresh} />
-            : tab === 'today' ? <Today deck={deck} demo={!!demo} onOpenDeck={() => { setTab('deck'); scrollTo(0, 0) }} />
+          {tab === 'skills' ? <MyDeck deck={deck} readOnly={!!demo && !(import.meta.env.DEV && location.search.includes('edit'))} onChanged={refresh} />
+            : tab === 'today' ? <Today deck={deck} demo={!!demo} onOpenDeck={() => { setTab('skills'); scrollTo(0, 0) }} />
             : (
               <div className="mt-16 text-center">
                 <h1 className="text-xl font-semibold">{tabs.find((t) => t.id === tab)?.label}</h1>

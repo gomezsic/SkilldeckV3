@@ -25,7 +25,7 @@ app/src/
   main.tsx                avvio, avviso di versione nuova, cattura degli errori
   lib/
     supabase.ts           collegamento
-    deck.ts               lettura e scrittura del profilo (My Deck)
+    deck.ts               lettura e scrittura del profilo (My Skills)
     application.ts        candidatura e fasce dei colloqui (ora di Roma)
     lists.ts              elenchi modificabili e catalogo dei titoli
     logbook.ts            lettura del file stagionale (Excel e CSV), controlli, sovrapposizioni
