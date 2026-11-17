@@ -30,6 +30,8 @@ Le decisioni dell'owner che guidano il lavoro, in ordine di tempo. Una decisione
 | 17/11 | Migrazione 2026: si portano clienti (anche i 10 senza vacanze), 60 ingaggi con barche, incarichi a bordo, partecipazioni. Non si portano le 9 bozze e l'ingaggio annullato. | Ricognizione in sola lettura del 17/11 |
 | 17/11 | Compensi e pagamenti fanno parte dell'ingaggio, sia per quelli passati sia per quelli futuri. | Corregge la proposta di lasciarli in archivio |
 | 17/11 | Nomi degli stati: Wannabe, In percorso, Ready, Non accettato, Escluso. "Career" resta il nome dell'evento. | Sostituisce "Registrato" del 14/11 |
+| 17/11 | Del compenso si tiene solo l'importo pattuito, senza stato "pagato / non pagato". Lo vedono l'amministratore e lo skipper, solo il proprio. | Precisa la riga sui compensi |
+| 17/11 | Strumenti PRO: gruppo di strumenti che si accende con un ingaggio assegnato, non una qualifica della persona. In futuro l'accesso sarà a pagamento. | |
 
 ## Aperte, in attesa dell'owner
 
