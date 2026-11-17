@@ -29,6 +29,7 @@ Le decisioni dell'owner che guidano il lavoro, in ordine di tempo. Una decisione
 | 17/11 | Il co-skipper vede e aiuta; le conferme le dà lo skipper. | |
 | 17/11 | Migrazione 2026: si portano clienti (anche i 10 senza vacanze), 60 ingaggi con barche, incarichi a bordo, partecipazioni. Non si portano le 9 bozze e l'ingaggio annullato. | Ricognizione in sola lettura del 17/11 |
 | 17/11 | Compensi e pagamenti fanno parte dell'ingaggio, sia per quelli passati sia per quelli futuri. | Corregge la proposta di lasciarli in archivio |
+| 17/11 | Nomi degli stati: Wannabe, In percorso, Ready, Non accettato, Escluso. "Career" resta il nome dell'evento. | Sostituisce "Registrato" del 14/11 |
 
 ## Aperte, in attesa dell'owner
 

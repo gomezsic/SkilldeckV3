@@ -95,7 +95,7 @@ export default function ControlRoom({ demo, onOpen: setOpenPerson }: { demo: boo
       <h1 className="text-2xl font-semibold">Cabina di regia</h1>
       <p className="mt-1 text-sm text-ink-soft">Chi sta aspettando una tua decisione.</p>
       <dl className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {([['total', 'Persone'], ['registered', 'Registrati'], ['in_path', 'In percorso'], ['ready', 'Ready']] as const).map(([k, label]) => (
+        {([['total', 'Persone'], ['registered', 'Wannabe'], ['in_path', 'In percorso'], ['ready', 'Ready']] as const).map(([k, label]) => (
           <div key={k} className="rounded-2xl border border-line bg-card px-4 py-3">
             <dt className="text-xs font-medium text-ink-soft">{label}</dt>
             <dd className="text-2xl font-semibold tabular-nums">{board.counts[k] ?? 0}</dd>

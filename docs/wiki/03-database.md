@@ -49,6 +49,7 @@ Supabase, progetto di collaudo `skilldeck-v3-collaudo`. Stato al 14/11/2026: **2
 | 0014 | Elenchi della candidatura Crew |
 | 0015 | Salute del sistema: permessi più stretti, indici, registro errori, controllo di salute |
 | 0016 | La coda "Pronti per Ready" esclude le persone archiviate |
+| 0017 | Il primo stato si legge "Wannabe": aggiornati i tre messaggi dei comandi (il valore resta `registered`) |
 
 Regole per le migrazioni: piccole, solo in avanti, una per passo; il file nel repository e ciò che è applicato devono coincidere; dopo ogni migrazione si esegue il controllo di salute.
 

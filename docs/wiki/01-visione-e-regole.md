@@ -9,7 +9,7 @@ La piattaforma attuale funziona ma è cresciuta per aggiunte: 286 tabelle (67 vu
 - **Prima la persona, poi i dati.** Lo schermo non rappresenta il database: risponde a "chi sei, cosa devi fare, cosa ti serve vedere".
 - **Quattro mondi per l'utente**: Today (prossimo passo, segnalazioni, scadenze), My Job (ingaggi, bacheca, calendario), My Deck (strumenti per quando si è in viaggio), My Skills (profilo completo, crescita, Curriculum nautico). Il profilo sta in My Skills; la foto in alto lo apre da ogni pagina (decisione del 17/11).
 - **Cinque famiglie**: Skipper, Crew/Staff, Formatore, Armatore, Amministratore.
-- **Stati della persona**: Registrato, In percorso, Ready, Non accettato, Escluso. Ready lo conferma sempre l'amministratore.
+- **Stati della persona**: Wannabe, In percorso, Ready, Non accettato, Escluso ("Career" resta il nome dell'evento; nel database Wannabe è il valore `registered`). Ready lo conferma sempre l'amministratore.
 - **L'amministratore lavora da computer**, in un ambiente separato con nove aree.
 - **Potere totale dell'amministratore**: ogni cosa che vede è cliccabile e si può consultare, modificare, eliminare, salvare.
 - **Applicazione guidata per non esperti**: controlli di buon senso su ogni dato; mai errori generici; conferma di ogni salvataggio.

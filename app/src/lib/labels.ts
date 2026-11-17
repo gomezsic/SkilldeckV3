@@ -1,7 +1,7 @@
 import type { PersonStatus, Requirement, StepKind, StepStatus, TitleStatus } from './types'
 
 export const statusLabel: Record<PersonStatus, string> = {
-  registered: 'Registrato', in_path: 'In percorso', ready: 'Ready', not_accepted: 'Non accettato', excluded: 'Escluso',
+  registered: 'Wannabe', in_path: 'In percorso', ready: 'Ready', not_accepted: 'Non accettato', excluded: 'Escluso',
 }
 export const stepLabel: Record<StepKind, string> = {
   interview: 'Colloquio', test: 'Test', career: 'Career', documents: 'Documenti', ready_confirmation: 'Conferma Ready',

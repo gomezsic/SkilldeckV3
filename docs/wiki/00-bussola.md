@@ -1,6 +1,6 @@
 # 00 · Bussola
 
-Aggiornata il **17 novembre 2026, ore 8:45**. Ultima migrazione: **0016**. Sito di collaudo: https://skilldeckpro-v3.web.app
+Aggiornata il **17 novembre 2026, ore 8:45**. Ultima migrazione: **0017**. Sito di collaudo: https://skilldeckpro-v3.web.app
 
 ## Dove siamo
 
@@ -25,7 +25,7 @@ Avanzamento del primo tempo, per blocchi:
 | Email (modelli approvati, invii controllati, registro) | **Non iniziato**: manca la posta sul dominio |
 | Migrazione dei dati dalla piattaforma attuale | **Non iniziata** |
 
-**Novità del 17/11.** Il profilo completo ora sta in **My Skills**; la foto in alto lo apre da ogni pagina. **My Deck** è il mondo degli strumenti di viaggio (per ora segnaposto, secondo tempo). Decisioni dell'owner raccolte lo stesso giorno: vedi `06-decisioni.md`.
+**Novità del 17/11.** Il profilo completo ora sta in **My Skills**; la foto in alto lo apre da ogni pagina. **My Deck** è il mondo degli strumenti di viaggio (per ora segnaposto, secondo tempo). Lo stato "Registrato" ora si chiama **Wannabe** (migrazione 0017, solo i nomi). Decisioni dell'owner raccolte lo stesso giorno: vedi `06-decisioni.md`.
 
 ## Cosa è fatto bene
 
