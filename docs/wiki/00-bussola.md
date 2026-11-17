@@ -25,7 +25,7 @@ Avanzamento del primo tempo, per blocchi:
 | Email (modelli approvati, invii controllati, registro) | **Non iniziato**: manca la posta sul dominio |
 | Migrazione dei dati dalla piattaforma attuale | **Non iniziata** |
 
-**Novità del 17/11.** Il profilo completo ora sta in **My Skills**; la foto in alto lo apre da ogni pagina. **My Deck** è il mondo degli strumenti di viaggio (per ora segnaposto, secondo tempo). Lo stato "Registrato" ora si chiama **Wannabe** (migrazione 0017, solo i nomi). Decisioni dell'owner raccolte lo stesso giorno: vedi `06-decisioni.md`.
+**Novità del 17/11.** Il profilo completo ora sta in **My Skills**; la foto in alto lo apre da ogni pagina. **My Deck** è il mondo degli strumenti di viaggio (per ora segnaposto, secondo tempo). Lo stato "Registrato" ora si chiama **Wannabe** (migrazione 0017, solo i nomi). Le ventidue decisioni aperte sono tutte passate dall'owner: vedi `06-decisioni.md`.
 
 ## Cosa è fatto bene
 
@@ -40,7 +40,7 @@ Avanzamento del primo tempo, per blocchi:
 Debolezze note, in ordine di importanza.
 
 1. **Quasi nulla è stato provato dal vivo da un utente vero.** È il rischio maggiore: finché l'owner non prova i moduli sul sito, i difetti di salvataggio restano nascosti. Il registro degli errori (area Sistema) ora li raccoglie da solo.
-2. **Posta di prova di Supabase**: rifiuta i domini aziendali e ha un tetto orario. Blocca le registrazioni con email. Serve la posta sul dominio skilldeckpro.com.
+2. **Posta di prova di Supabase**: rifiuta i domini aziendali e ha un tetto orario. Blocca le registrazioni con email. Deciso il 17/11: Resend sul sottodominio dedicato `app.skilldeckpro.com`. Configurazione avviata, in attesa delle righe del dominio.
 3. **Indirizzo del sito in Supabase**: impostato dall'owner il 14/11. Da confermare alla prima registrazione con email.
 4. **Protezione delle password compromesse** spenta in Supabase (segnalata dal controllo di Supabase). Si accende dal pannello, lo fa l'owner.
 6. **Le prove automatiche coprono solo due moduli** (dati fiscali e logbook). Mancano quelle sulle fasce dei colloqui e sulle schermate.
@@ -51,19 +51,21 @@ Debolezze note, in ordine di importanza.
 ## Cosa manca per chiudere il profilo
 
 - Email di promemoria delle scadenze (dipende dalla posta).
-- Lettura automatica della scadenza dal documento (serve scegliere un servizio).
-- Decisione dell'owner sulle lettere di referenza: tenerle o toglierle.
+- Riconoscimento automatico del documento (tipo e date): deciso che si fa, dopo le prove dell'inserimento a mano. Progetto in cinque fasi nel documento unico.
+- Lettere di referenza: rimandate dall'owner, restano presenti e facoltative.
+- Richiesta di cancellazione del proprio account (arriva all'amministratore).
+- Verifica in due passaggi per l'amministratore, prima dell'apertura.
 - Simulazione utente ("guarda come questa persona").
 
 ## Cosa viene dopo
 
-1. Prove dal vivo dell'owner su candidatura e profilo, e correzione di ciò che emerge.
-2. Posta sul dominio e piano email (sei regole già approvate).
+1. Posta: Resend su `app.skilldeckpro.com` (tre tappe, la chiave la inserisce l'owner). Sblocca le registrazioni con email.
+2. Prove dal vivo dell'owner in cinque giri, e correzione di ciò che emerge. Poi piano email (sei regole già approvate).
 3. Test: un solo motore per Skipper Test e Crew Test.
 4. Career e area formazione.
-5. Migrazione dei dati sani dalla piattaforma attuale.
+5. Migrazione dei dati sani dalla piattaforma attuale, compreso lo storico 2026: 829 clienti, 50 ingaggi pubblicati con barche, 154 incarichi di tutti i ruoli con compenso pattuito, 853 partecipazioni. Niente lettere, bozze, annullati.
 6. Secondo tempo.
 
 ## Scadenze esterne
 
-- **16 novembre 2026**: esame reale WTest Water Tribe sulla piattaforma **attuale**, circa 100 persone. Non riguarda la V3 e non si tocca.
+- Nessuna aperta. L'esame WTest del 16 novembre 2026 sulla piattaforma attuale è passato.

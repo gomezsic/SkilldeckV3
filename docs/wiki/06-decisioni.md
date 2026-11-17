@@ -32,11 +32,17 @@ Le decisioni dell'owner che guidano il lavoro, in ordine di tempo. Una decisione
 | 17/11 | Nomi degli stati: Wannabe, In percorso, Ready, Non accettato, Escluso. "Career" resta il nome dell'evento. | Sostituisce "Registrato" del 14/11 |
 | 17/11 | Del compenso si tiene solo l'importo pattuito, senza stato "pagato / non pagato". Lo vedono l'amministratore e lo skipper, solo il proprio. | Precisa la riga sui compensi |
 | 17/11 | Strumenti PRO: gruppo di strumenti che si accende con un ingaggio assegnato, non una qualifica della persona. In futuro l'accesso sarà a pagamento. | |
+| 17/11 | Posta: Resend su sottodominio dedicato (`app.skilldeckpro.com`). | Non toccare la posta della piattaforma attuale |
+| 17/11 | Storico 2026 per tutti i ruoli a bordo, co-skipper compresi. | |
+| 17/11 | Riconoscimento automatico dei documenti (tipo e date) con conferma della persona: si fa, dopo le prove dell'inserimento a mano. | I formati sono pochi e ripetitivi |
 
-## Aperte, in attesa dell'owner
+## Rimandate dall'owner
 
-- Lettere di referenza: tenerle o toglierle.
-- Parere sulla nuova schermata di modifica del curriculum.
-- Email di avviso scadenze: servono posta sul dominio e modelli approvati.
-- Lettura automatica della scadenza dai documenti caricati.
-- Revisione periodica programmata (settimanale) del progetto.
+- Lettere di referenza: "lo decideremo più avanti". Restano presenti e facoltative.
+- Equivalenze per primo soccorso e radio: valgono le ufficiali già inserite; la gerarchia la prepara l'owner.
+
+## Avanti con l'ipotesi scritta
+
+- Test Crew e Staff: 75% e un tentativo, come lo Skipper Test.
+- Schermata di modifica del curriculum: resta com'è finché l'owner non la prova.
+- Promemoria scadenze a 90, 60 e 30 giorni: automatici, con modello approvato.
